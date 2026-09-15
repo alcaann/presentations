@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Presentations — alcaann</title>
+<style>
+  :root{--bg:#fbfbfa;--fg:#1c1c1a;--dim:#6b6b66;--line:#e2e2dd;--card:#fff;--accent:#7a3fb8}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#16161a;--fg:#e9e9e4;--dim:#9a9a94;--line:#2c2c32;--card:#1e1e24;--accent:#b98ce8}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:720px;margin:0 auto;padding-block:64px 80px;padding-left:20px;padding-right:20px}
+  h1{font-size:28px;margin:0 0 6px;letter-spacing:-.02em}
+  .sub{color:var(--dim);margin:0 0 40px}
+  a.card{display:block;text-decoration:none;color:inherit;background:var(--card);
+         border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin-bottom:14px;
+         transition:border-color .15s,transform .15s}
+  a.card:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .course{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);
+          font-weight:600;margin-bottom:6px}
+  .name{font-size:18px;font-weight:600;margin-bottom:4px}
+  .desc{color:var(--dim);font-size:14px}
+  footer{margin-top:48px;padding-top:20px;border-top:1px solid var(--line);
+         color:var(--dim);font-size:13px}
+  kbd{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--card);
+      border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+</style></head><body>
+<div class="wrap">
+  <h1>Presentations</h1>
+  <p class="sub">Zooming presentations drawn by hand, navigated as camera moves over one canvas.</p>
+
+  <a class="card" href="tdt03-facenet/">
+    <div class="course">TDT03 · Advanced Topics in Visual Computing</div>
+    <div class="name">FaceNet — inference pipeline</div>
+    <div class="desc">Detection to 128-D embedding, with the NN1/NN2 cost table. 8 camera frames.</div>
+  </a>
+
+  <footer>
+    Navigate with <kbd>&larr;</kbd> <kbd>&rarr;</kbd> or <kbd>space</kbd>,
+    <kbd>Home</kbd> for the overview, <kbd>H</kbd> to hide the caption bar.
+    Each page is a single self-contained file and runs offline.
+  </footer>
+</div>
+</body></html>
