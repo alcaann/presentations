@@ -11,6 +11,7 @@ at runtime.
 | Folder | Course | Presentation |
 |---|---|---|
 | `tdt03-facenet/` | TDT03 — Advanced Topics in Visual Computing | FaceNet inference pipeline |
+| `tdt16/` | TDT16 — XR | Gaussian's Anatomy: 3D Gaussian Splatting for Cinematic Anatomy (slides, speaker notes, headset demo video; `P` opens the presenter view) |
 
 ## Adding one
 
@@ -31,6 +32,11 @@ that catch a rasterized export — live in the `thesis-prep` repo under
 
 Sources for each presentation (`canvas.svg`, `canvas.pdf`) sit next to its
 `index.html` so the page can be rebuilt from what is here.
+
+`tdt16/` is a slide deck instead: one image per slide plus its speaker notes and
+video, exported from the deck in `theory_modules/xr_TDT16/presentation/` by
+`tools/deploy.sh` (`tools/export-pages.mjs`). Its presenter view (`P`) shows the
+notes, the next slide and a timer, and opens a synced audience window for the projector.
 
 ## Presenting
 

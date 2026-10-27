@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaussian's Anatomy</title>
+<!-- Built by tools/export-pages.mjs from deck.json: slide images, speaker notes and videos.
+     Audience view by default; P (or ?presenter) for the presenter view, which opens and drives
+     a second window for the projector. Plain files, no network: works from a USB stick too. -->
+<style>
+  :root { --bg:#111; --panel:#1b1b1f; --ink:#e9e9e4; --mute:#9a9a94; --line:#33333a; --acc:#4f8cff; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; overflow: hidden; }
+  .slide { position: relative; aspect-ratio: 16 / 9; background: #fff; }
+  .slide > img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
+  .slide video { position: absolute; background: #000; object-fit: contain; }
+
+  /* audience */
+  #aud { position: fixed; inset: 0; display: grid; place-items: center; background: #000; }
+  #aud .slide { width: min(100vw, calc(100vh * 16 / 9)); }
+  #hint { position: fixed; right: 10px; bottom: 8px; font-size: 12px; color: #888; background: #000a; padding: 3px 8px; border-radius: 6px; transition: opacity .6s; }
+  kbd { font: 11px ui-monospace, monospace; border: 1px solid #555; border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; }
+
+  /* presenter */
+  #pre { position: fixed; inset: 0; display: none; grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+         grid-template-rows: auto minmax(0, 1fr); gap: 14px; padding: 14px; }
+  body.presenter #pre { display: grid; } body.presenter #aud, body.presenter #hint { display: none; }
+  #bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  #bar .big { font-size: 26px; font-variant-numeric: tabular-nums; font-weight: 600; }
+  #bar .mute { color: var(--mute); }
+  #bar .grow { flex: 1; }
+  button { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 7px; padding: 5px 11px; cursor: pointer; }
+  button:hover { border-color: var(--acc); }
+  button.on { border-color: var(--acc); color: var(--acc); }
+  #left { display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+  #cur { width: 100%; max-height: 100%; outline: 3px solid var(--acc); }
+  #right { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+  #nextwrap .label, #notesbox .label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--mute); margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+  #next { width: 100%; opacity: .9; }
+  #next.end { display: grid; place-items: center; background: var(--panel); color: var(--mute); }
+  #notesbox { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  #notes { flex: 1; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; font-size: 20px; }
+  #notes p { margin: 0 0 .6em; } #notes:empty::before { content: "no notes"; color: var(--mute); }
+  @media (max-width: 800px) { #pre { grid-template-columns: 1fr; grid-template-rows: auto auto auto; overflow: auto; } }
+</style></head>
+<body>
+<div id="aud"><div class="slide" id="audslide"></div></div>
+<div id="hint"><kbd>←</kbd><kbd>→</kbd> slides · <kbd>F</kbd> fullscreen · <kbd>P</kbd> presenter view with notes</div>
+
+<div id="pre">
+  <div id="bar">
+    <span class="big" id="num"></span>
+    <button id="prev">◀</button><button id="nextbtn">▶</button>
+    <span class="grow"></span>
+    <span class="mute">elapsed</span><span class="big" id="elapsed">0:00</span>
+    <button id="timer">pause</button><button id="reset">reset</button>
+    <span class="mute" id="clock"></span>
+    <button id="openaud" title="Opens the slides in a second window: drag it to the projector and press F there">open audience window</button>
+  </div>
+  <div id="left"><div class="slide" id="cur"></div></div>
+  <div id="right">
+    <div id="nextwrap"><div class="label">next</div><div class="slide" id="next"></div></div>
+    <div id="notesbox"><div class="label">notes <span><button id="smaller">A−</button> <button id="bigger">A+</button></span></div><div id="notes"></div></div>
+  </div>
+</div>
+
+<script>
+const DECK = {"title":"Gaussian's Anatomy","slides":[{"img":"slides/01.webp","notes":"\u003cp>TODO opening line.\u003c/p>","videos":[]},{"img":"slides/02.webp","notes":"\u003cp>TODO opening line.\u003c/p>","videos":[]},{"img":"slides/03.webp","notes":"\u003cp>TODO opening line.\u003c/p>","videos":[]},{"img":"slides/04.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/05.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/06.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/07.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/08.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/09.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/10.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/11.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/12.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/13.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/14.webp","notes":"\u003cp>A contribution this paper makes is the way in which the view seletio is made. In previous methods, such as the one on the left and tested in the paper,  batches of many random camera samples are iterated over, resulting in a set of view points that maximize two criteria:\u003c/p>\u003cp>- observation frequency, which is 0 when no camera observes a point and 1 when all observe it; when we talk about observing here, it just means that the point observed is geometrically inside the camera's field of view, without taking into account if there is occlusion ongoing\u003c/p>\u003cp>- angular uniformity, which takes into account how many different side of the points are captured.\u003c/p>\u003cp>The problem with the classic approach is that the algorithm maximizes the observation frequency which does not take into account the actual visibility of points (e.g. tissue inside a cavitiy). This can be fine for representations of statues for example, but is problematic for organ volumetric spaces.\u003c/p>\u003cp>Thus, the authors propose a couple of tweaks:\u003c/p>\u003cp>- first, instead of just relying on iterating over batched random view points, a Bayesian Optimal Sampling technique is used; it balances exploitation and exploration. This entails training a Gaussian process that predicts scores of unevaluated poses. This works by computing the UCB (i.e. the Upper Confidence Bound) over many poses\u003c/p>","videos":[]},{"img":"slides/15.webp","notes":"\u003cp>UCB(x) = μ(x) + κσ(x): here μ is the predicted score (exploit); σ meanwhile is the model's uncertainity (explore); using an empirically chosen κ = 10 constant (quite exploratory), at each step the pose with the highest UCB is chosen. After the real score is computed, the model is updated.\u003c/p>\u003cp>- second, the observation frequency criteria is tweaked: while we try to maximize the criteria from before, observation frequency now counts how well each camera can actually see the point; now, for each voxel the GPU ray marches along the ray from the camera to it, accumulating transmittance, i.e. the fraction of light that survives. The cameras that are placed inside the cavities are able to maximize this criteria for the before-unseen points, as shown in the figure. This is more expensive -- I think it is why BOS improves efficiency and makes this approach doable.\u003c/p>","videos":[]},{"img":"slides/16.webp","notes":"\u003cp>Here is an actual example, showing how the ribcage is properly defined in the version with view selection, instead of noisy gaussians when the random viewpoint selection method is used.\u003c/p>","videos":[]},{"img":"slides/17.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/18.webp","notes":"\u003cp>For the 2nd contribution, we have to quickly remember the principle of 3DGS: we have 3D gaussians, defined by position, colour (spherical harmonics), covariance (shape), and opacity. After the image is rendered using 3D gaussians, the loss function compares the color of each pixel of the ground-truth and rendered image. The parameters mentioned are updated via their gradients. According to an algorithm, the number of gaussians is also modified (some are removed, some are cloned, some are split etc).\u003c/p>","videos":[]},{"img":"slides/19.webp","notes":"\u003cp>How does that work for the paper's case? To illustrate what the authors report, we have here our own illustration portraying a kidney-like structure. Because we compute the loss on the pixel RGB values, the background requires a fixed color. Then, the rendered image has plenty of artefacts representing gaussians that learn the background of the image. They show up like this kind of haze when the background is modified.\u003c/p>","videos":[]},{"img":"slides/20.webp","notes":"\u003cp>A solution for this issue is to also compute the loss function of the alpha values, thus taking the per-pixel accumulated opacity into account in the optimizing process. This way, the transparent background stays transparent and the tissue is rendered cleanly. The authors also notice improvements in the rendering of translucent materials.\u003c/p>","videos":[]},{"img":"slides/21.webp","notes":"\u003cp>A proper example from Figure 7 from the paper shows this even better: on the left picture, the colour-only reconstruction suffers from cloudy smudges.\u003c/p>","videos":[]},{"img":"slides/22.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/23.webp","notes":"\u003cp>In the results section, we start off with the memory usage.\u003c/p>\u003cp>This table shows us what is the volume size in the preprocessing stage, input to the path tracing process, as well as its rendering time and number of views for each data set. The resulting 3DGS scenes are much smaller by comparison, though there is some time spent on optimizing the gaussians for the sets. The HR compression here is due to the compression stage mentioned by Juan earlier in the presentation -- it stands for High Rate Compression.\u003c/p>","videos":[]},{"img":"slides/24.webp","notes":"\u003cp>This time, though, is a one-time cost, so it is quite practical -- between 1 and 4.5 hours. The resulting data size is very small in comparison to the volumes, from 530x for brain to 30x for body. These models are small enough to easily download to a headset or a phone.\u003c/p>","videos":[]},{"img":"slides/25.webp","notes":"\u003cp>Next up, quality evaluation. We have here some samples from test viewpoints (never seen before views by the 3DGS in the brain dataset). The high quality compression version here delivers very similar performances from a visual fidelity point of view, while increasing the memory usage by a factor of 3 compared to High Rate Compression. This is why the HR version is tested going forward.\u003c/p>","videos":[]},{"img":"slides/26.webp","notes":"\u003cp>On Table 2 from the paper we have the SSIM, PSNR and PSNR for the alpha channel metrics of the HR-compressed models. SSIM is the Structural Similarity Index Measure (0 to 1), PSNR is the Peak Signal to Noise Ratio (measures pixel error in decibels) and PSNR measures how accurately the opacity of pixels is reconstructed.\u003c/p>\u003cp>Visually, we can see a good level of fidelity. Also, there is no competing method in the paper, so the numbers only show the closeness to ground truth. We can infer from these metrics that the brain dataset is the hardest to render accurately due to its complexity and need of many gaussians.\u003c/p>","videos":[]},{"img":"slides/27.webp","notes":"\u003cp>Performance in rendering is another key aspect to measure in evaluations. Based on Table 3 from the paper, we can see that the frames per second achieved on strong consumer-level GPUs is good -- the brain dataset being again the trickiest to render live. It is important to take note here that one path-traced frame takes 95 seconds on similar hardware, while the gaussians take miliseconds.\u003c/p>\u003cp>What is more interesting for us is, of course, the performance on affordable, consumer-level devices. The authors test an integrated ryzen GPU and a phone GPU from a couple of years ago. The results point to difficulties in both situations. It makes it so that a consumer-level, modern GPU can be a good fit for an enjoyable experience, but anything lower than that is not ideal. We will see a bit more about this later in the demo -- a desktop is suitable for a headset, but mobile isn't there yet.\u003c/p>","videos":[]},{"img":"slides/28.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/29.webp","notes":"\u003cp>The authors discuss in detail how semi-transparent tissue is a main weakness, even with alpha channel loss. Overall 3DGS handles them well, but in the close-ups we see here for example, details are lost or blurred. If there is more depth of semi-transparent layers, the issue becomes more noticeable.\u003c/p>","videos":[]},{"img":"slides/30.webp","notes":"\u003cp>Among the points of discussion the authors signal, the static presets that are baked in the scenes are clear limitations that are conceded due to the educational nature of the project and that the models are small enough to have one per preset.\u003c/p>","videos":[]},{"img":"slides/31.webp","notes":"\u003cp>Lighting is also baked in the scenes right now. It does not move relative to the object. With the headlight, artefacts appear, as the light moves with the camera and every training image lights the tissue differently. 3DGs cannot capture such strong changes.\u003c/p>","videos":[]},{"img":"slides/32.webp","notes":"\u003cp>You can see it better here, how there are noisy gaussians in areas that are lit in a different manner. A proposed fix by the authors is relighting, i.e. training on the base material properties instead of already lit images.\u003c/p>","videos":[]},{"img":"slides/33.webp","notes":"\u003cp>The last discussion point brought up is the fact that the scenes have no interactive clip planes, meaning that the tissue is as it is and cannot be sectioned on the spot. A potential idea that is suggested is moving the plane in discrete steps, with one model per step -- with the caveat that it'd need such more memory, though encoding only changing gaussians could help with that. As a sidenote, we found a follow-up paper from Li et al. that was present at MICCAI last year, which uses one model for all plane positions. In this paradigm, each gaussian learns to disappear as the plane moves.\u003c/p>","videos":[]},{"img":"slides/34.webp","notes":"\u003cp>\u003c/p>","videos":[{"src":"media/s34-video0.mp4","poster":"media/s34-poster0.jpg","x":29.874,"y":14.222,"w":40.253,"h":76.444}]},{"img":"slides/35.webp","notes":"\u003cp>\u003c/p>","videos":[]},{"img":"slides/36.webp","notes":"\u003cp>\u003c/p>","videos":[]}]};
+const N = DECK.slides.length;
+const $ = (id) => document.getElementById(id);
+let idx = 0;
+
+// ---- sync between the presenter and the audience window. postMessage to the window we opened
+// (or that opened us) works even from file://; BroadcastChannel covers a second tab opened by hand.
+const bc = 'BroadcastChannel' in window ? new BroadcastChannel('slides:' + location.pathname) : null;
+let peer = window.opener || null;
+function broadcast(msg) {
+  try { if (peer && !peer.closed) peer.postMessage(msg, '*'); } catch (e) {}
+  try { bc && bc.postMessage(msg); } catch (e) {}
+}
+function onMessage(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (typeof msg.slide === 'number') go(msg.slide, false);
+  if (msg.video) applyVideo(msg.video);
+  if (msg.hello && presenter) broadcast({ slide: idx });
+}
+addEventListener('message', (e) => { if (e.source === peer || e.source === window.opener) onMessage(e.data); });
+bc && (bc.onmessage = (e) => onMessage(e.data));
+
+// ---- drawing
+function fill(el, i, live) {
+  el.innerHTML = '';
+  if (i >= N) { el.classList.add('end'); el.textContent = 'end'; return; }
+  el.classList.remove('end');
+  const s = DECK.slides[i], img = new Image();
+  img.src = s.img; img.alt = 'slide ' + (i + 1); img.draggable = false;
+  el.append(img);
+  s.videos.forEach((v, k) => {
+    if (!live) return; // the next-slide preview stays a still image (the video's area is blank there)
+    const vid = document.createElement('video');
+    Object.assign(vid, { src: v.src, controls: true, playsInline: true, preload: 'auto' });
+    if (v.poster) vid.poster = v.poster;
+    Object.assign(vid.style, { left: v.x + '%', top: v.y + '%', width: v.w + '%', height: v.h + '%' });
+    vid.dataset.k = k;
+    if (presenter) vid.muted = true; // the sound (if any) comes from the projector window
+    for (const ev of ['play', 'pause', 'seeked', 'ratechange'])
+      vid.addEventListener(ev, () => { if (!applying) broadcast({ video: { slide: idx, k, t: vid.currentTime, playing: !vid.paused, rate: vid.playbackRate } }); });
+    el.append(vid);
+  });
+}
+let applying = false;
+function applyVideo(v) {
+  if (v.slide !== idx) return;
+  const vid = document.querySelector((presenter ? '#cur' : '#audslide') + ` video[data-k="${v.k}"]`);
+  if (!vid) return;
+  applying = true;
+  if (Math.abs(vid.currentTime - v.t) > 0.3) vid.currentTime = v.t;
+  vid.playbackRate = v.rate || 1;
+  (v.playing ? vid.play().catch(() => {}) : Promise.resolve(vid.pause())).finally(() => setTimeout(() => { applying = false; }, 50));
+}
+function go(i, tell = true) {
+  i = Math.max(0, Math.min(N - 1, i));
+  idx = i;
+  if (presenter) {
+    fill($('cur'), i, true); fill($('next'), i + 1, false);
+    $('notes').innerHTML = DECK.slides[i].notes;
+    $('notes').scrollTop = 0;
+    $('num').textContent = `${i + 1} / ${N}`;
+    if (!started) startTimer();
+  } else fill($('audslide'), i, true);
+  history.replaceState(null, '', location.pathname + location.search + '#' + (i + 1));
+  [i + 1, i + 2].forEach((j) => { if (j < N) new Image().src = DECK.slides[j].img; });
+  if (tell) broadcast({ slide: i });
+}
+
+// ---- presenter: timer, notes size, audience window
+const presenter = new URLSearchParams(location.search).has('presenter');
+document.body.classList.toggle('presenter', presenter);
+let started = 0, pausedAt = 0, running = false;
+function startTimer() { started = Date.now(); running = true; }
+function fmt(ms) { const s = Math.floor(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+setInterval(() => {
+  if (!presenter) return;
+  $('elapsed').textContent = fmt(running ? Date.now() - started : pausedAt);
+  $('clock').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}, 500);
+if (presenter) {
+  $('timer').onclick = () => {
+    if (running) { pausedAt = Date.now() - started; running = false; $('timer').textContent = 'resume'; }
+    else { started = Date.now() - pausedAt; running = true; $('timer').textContent = 'pause'; }
+  };
+  $('reset').onclick = () => { started = Date.now(); pausedAt = 0; };
+  $('prev').onclick = () => go(idx - 1);
+  $('nextbtn').onclick = () => go(idx + 1);
+  let fs = +(localStorage.getItem('notes-size') || 20);
+  const size = (d) => { fs = Math.max(12, Math.min(44, fs + d)); $('notes').style.fontSize = fs + 'px'; try { localStorage.setItem('notes-size', fs); } catch (e) {} };
+  size(0);
+  $('smaller').onclick = () => size(-2); $('bigger').onclick = () => size(2);
+  $('openaud').onclick = () => {
+    peer = window.open(location.pathname + '#' + (idx + 1), 'audience', 'popup,width=1280,height=720');
+    $('openaud').classList.add('on');
+  };
+}
+
+// ---- keys (clickers send PageUp/PageDown), click to advance in the audience window
+addEventListener('keydown', (e) => {
+  if (e.target.closest && e.target.closest('video') && (e.key === ' ' || e.key === 'k')) return;
+  const k = e.key;
+  if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter', 'n'].includes(k)) { e.preventDefault(); go(idx + 1); }
+  else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'p'].includes(k) && !(k === 'p' && !presenter)) { e.preventDefault(); go(idx - 1); }
+  else if (k === 'Home') go(0);
+  else if (k === 'End') go(N - 1);
+  else if ((k === 'f' || k === 'F') && !presenter) document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+  else if ((k === 'P' || k === 'p') && !presenter) {
+    // open the presenter view, and turn this window into its audience window
+    peer = window.open(location.pathname + '?presenter#' + (idx + 1), 'presenter');
+  }
+});
+$('aud').addEventListener('click', (e) => { if (e.target.tagName !== 'VIDEO') go(idx + (e.clientX > innerWidth / 3 ? 1 : -1)); });
+setTimeout(() => { $('hint').style.opacity = 0; }, 4000);
+
+go((parseInt(location.hash.slice(1), 10) || 1) - 1, false);
+if (!presenter) broadcast({ hello: true }); // a fresh audience window asks the presenter where we are
+</script>
+</body></html>
