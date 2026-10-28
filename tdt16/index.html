@@ -71,13 +71,22 @@ let idx = 0;
 // ---- sync between the presenter and the audience window. postMessage to the window we opened
 // (or that opened us) works even from file://; BroadcastChannel covers a second tab opened by hand.
 const bc = 'BroadcastChannel' in window ? new BroadcastChannel('slides:' + location.pathname) : null;
+// Every message goes out on both, and the two are not ordered against each other: a late copy
+// of an older "slide 6" could land after "slide 7" and leave the audience one behind. So each
+// window numbers what it sends, and drops anything not newer than what it has already applied.
 let peer = window.opener || null;
+const me = Math.random().toString(36).slice(2);
+let sent = 0;
+const seen = {};
 function broadcast(msg) {
+  msg = { ...msg, from: me, seq: ++sent };
   try { if (peer && !peer.closed) peer.postMessage(msg, '*'); } catch (e) {}
   try { bc && bc.postMessage(msg); } catch (e) {}
 }
 function onMessage(msg) {
-  if (!msg || typeof msg !== 'object') return;
+  if (!msg || typeof msg !== 'object' || !msg.from || msg.from === me) return;
+  if (msg.seq <= (seen[msg.from] || 0)) return; // a duplicate, or overtaken by a newer one
+  seen[msg.from] = msg.seq;
   if (typeof msg.slide === 'number') go(msg.slide, false);
   if (msg.video) applyVideo(msg.video);
   if (msg.hello && presenter) broadcast({ slide: idx });
@@ -159,6 +168,9 @@ if (presenter) {
     $('openaud').classList.add('on');
   };
 }
+
+// Buttons never take focus: a focused button would fire again on the next Space/Enter (clickers).
+document.querySelectorAll('button').forEach((b) => b.addEventListener('mousedown', (e) => e.preventDefault()));
 
 // ---- keys (clickers send PageUp/PageDown), click to advance in the audience window
 addEventListener('keydown', (e) => {
