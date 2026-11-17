@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Smell walkthrough</title>
+<link rel="stylesheet" href="../shared/host.css">
+<script type="importmap">
+{ "imports": { "three": "./vendor/three-0.180.0.module.min.js", "three/addons/": "./vendor/addons/" } }
+</script>
+</head>
+<body>
+<div id="seq-ui"></div>
+<div id="stats"></div>
+<button id="vr" disabled>Enter VR</button>
+<script type="module">
+// The smell walkthrough (Sequences 2 and 3 of the talk) on its own. The walkthrough itself is
+// sequence.js; the whole talk, after Sequence 1, is ../story/. ?step=N or ?step=<id>, ?atlas=github,
+// ?blocks=A|D and ?emulate work as before.
+import { runStory } from '../shared/host.js';
+await runStory([{ title: 'Sequence 2: Coffee', module: 'sequence.js' }]);
+</script>
+</body></html>

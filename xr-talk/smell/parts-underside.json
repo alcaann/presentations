@@ -1,0 +1,9 @@
+{
+ "source": "Z-Anatomy public atlas (github.com/Z-Anatomy/The-blend, CC BY-SA 4.0): the underside of the frontal lobe, which sits on the olfactory bulb and tract and is missing from smell.glb's brain. Exported by xr-dev/export.sh smell --parts parts-underside.json --out brain-underside.glb",
+ "groups": {
+  "brain": ["Straight gyrus (Gyrus rectus).l", "Straight gyrus (Gyrus rectus).r", "Orbital gyri.l", "Orbital gyri.r",
+            "Orbital gyri (Frontomarginal gyrus and sulcus*).l", "Orbital gyri (Frontomarginal gyrus and sulcus*).r",
+            "Olfactory sulcus.l", "Olfactory sulcus.r", "Orbital sulci (Lateral Orbital sulcus*).l", "Orbital sulci (Lateral Orbital sulcus*).r"]
+ },
+ "targets": {}
+}

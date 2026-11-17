@@ -1,0 +1,212 @@
+{
+ "note": "The pipeline blocks of the last step: from the 3D models and the headset's sensors to the picture in the lenses. Short labels only: the full text and what to say is plans/pipeline.md. 'when' is once (setup), session (once per Enter VR) or frame (every frame). 'on' is where a stage runs; style B places it there and style D puts the frame stages on the loop.",
+ "stages": [
+  {
+   "id": "setup",
+   "title": "0 · Setup (once)",
+   "lines": [
+    "Developer Mode, adb over USB-C or Wi-Fi",
+    "the headset's localhost:8798 is the laptop"
+   ],
+   "when": "once",
+   "on": "laptop"
+  },
+  {
+   "id": "load",
+   "title": "1 · Load the scene",
+   "lines": [
+    "page, three.js, steps, 3D models (~11 MB)",
+    "meshes copied once into GPU memory"
+   ],
+   "when": "session",
+   "on": "chip"
+  },
+  {
+   "id": "enter",
+   "title": "2 · Enter VR",
+   "lines": [
+    "an immersive session, origin on the floor",
+    "the headset takes over the displays"
+   ],
+   "when": "session",
+   "on": "chip"
+  },
+  {
+   "id": "track",
+   "title": "3 · Track",
+   "lines": [
+    "cameras + motion sensor → head pose (6DoF)",
+    "controllers: pose, buttons, stick"
+   ],
+   "when": "frame",
+   "on": "sensors"
+  },
+  {
+   "id": "update",
+   "title": "4 · Update (CPU)",
+   "lines": [
+    "pose predicted for when the frame shows",
+    "our code: buttons → steps, timelines, fades"
+   ],
+   "when": "frame",
+   "on": "cpu"
+  },
+  {
+   "id": "render",
+   "title": "5 · Render twice (GPU)",
+   "lines": [
+    "one camera per eye, as far apart as your eyes",
+    "both eyes drawn into one image"
+   ],
+   "when": "frame",
+   "on": "gpu"
+  },
+  {
+   "id": "show",
+   "title": "6 · Show",
+   "lines": [
+    "re-aimed to the newest pose, pre-warped for the lens",
+    "two displays, two lenses: your brain sees depth"
+   ],
+   "when": "frame",
+   "on": "display"
+  }
+ ],
+ "devices": {
+  "laptop": "Laptop: makes and serves the files",
+  "chip": "Headset chip: browser + memory",
+  "sensors": "Cameras + motion sensor",
+  "cpu": "CPU: our JavaScript",
+  "gpu": "GPU: two views",
+  "display": "Compositor → displays → lenses"
+ },
+ "loop": "every frame: 72-120 times a second",
+ "layers": {
+  "headset": [
+   "Quest 3 hardware: sensors, CPU, GPU, displays",
+   "Horizon OS + compositor",
+   "Quest Browser",
+   "WebXR",
+   "three.js",
+   "our page: index.html + steps.json + .glb"
+  ],
+  "laptop": [
+   "Laptop",
+   "Blender: Z-Anatomy, MakeHuman → .glb",
+   "python3 -m http.server",
+   "adb reverse"
+  ]
+ },
+ "models": {
+  "note": "The step before the stack: the four models, top down. Rows: raw files, what we keep, made lighter. Numbers: read from the files on 2026-11-17 (block and struct counts of the .blend, accessor counts of the .glb).",
+  "rows": [
+   "Raw 3D model files",
+   "1 · Keep only the parts we show",
+   "2 · Make them lighter"
+  ],
+  "columns": [
+   {
+    "id": "atlas",
+    "glb": [
+     "smell.glb",
+     "brain-underside.glb"
+    ],
+    "name": "Z-Anatomy atlas",
+    "raw": [
+     "Z-Anatomy.blend · 356 MB · 2,650 objects",
+     "+ the newer release for the brain's underside: Z-Anatomy-github.blend · 307 MB",
+     "Z-Anatomy, CC BY-SA 4.0"
+    ],
+    "keep": [
+     "344 objects from our copy (parts.json):",
+     "skull, nose, brain, smell pathway, skin",
+     "+ 10 from the newer release: the brain's underside"
+    ],
+    "lighter": [
+     "no subdivision, thickness or cuts",
+     "meshes over 20k triangles halved",
+     "no materials, no UV maps",
+     "→ smell.glb · 8.3 MB · 0.45 M triangles",
+     "→ brain-underside.glb · 0.07 MB"
+    ]
+   },
+   {
+    "id": "person",
+    "glb": "person.glb",
+    "name": "MakeHuman man",
+    "raw": [
+     "MakeHuman assets · 267 MB (zip)",
+     "a body shaped with sliders, clothes, hair",
+     "CC0 · built in Blender with MPFB 2"
+    ],
+    "keep": [
+     "10 meshes: body, eyes, eyebrows,",
+     "eyelashes, suit, shoes, hair, the mug"
+    ],
+    "lighter": [
+     "pose baked in: no skeleton",
+     "no animation, no shape sliders",
+     "textures shrunk to 1024 px JPEG",
+     "→ person.glb · 2.3 MB"
+    ]
+   },
+   {
+    "id": "headset",
+    "glb": "headset.glb",
+    "name": "VR headset",
+    "raw": [
+     "headset.glb · 0.1 MB",
+     "\"VR Headset\" by J-Toastie, Poly Pizza",
+     "CC BY 3.0"
+    ],
+    "keep": [
+     "all of it"
+    ],
+    "lighter": [
+     "already light: used as downloaded"
+    ]
+   }
+  ],
+  "blend": {
+   "title": "Inside a .blend file (Z-Anatomy.blend)",
+   "lines": [
+    "BLENDER-v292   Blender 2.92, 64-bit, little-endian",
+    "then 100,172 blocks: pieces of Blender's memory,",
+    "  each: code · size · old address · type · count",
+    "",
+    "OB \"Nasal bone.r\"   an object: place, parent",
+    "  .data  → ME   a mesh: counts, array addresses",
+    "  .mvert → DATA 148 vertices (x, y, z)",
+    "  .mpoly → DATA 292 faces: first corner, count",
+    "  .mloop → DATA 876 corners: vertex, edge",
+    "  .medge → DATA 438 edges",
+    "  .mat   → MA   material \"Bone\"",
+    "DNA1   the catalogue: every struct's fields",
+    "",
+    "Whole file: 2,650 OB, 1,565 ME, 32 MA;",
+    "98% of the bytes are DATA arrays.",
+    "glTF keeps vertices, normals, triangles.",
+    "No edges: the GPU only draws triangles."
+   ]
+  },
+  "load": {
+   "note": "Steps pipeline-load and pipeline-site. Grounded 2026-11-17 in the vendored code: GLTFLoader.js:298-301 fetches each file as an arraybuffer, :424-447 parses glTF; three.js draws through a webgl2 context (gl.bufferData) and gets head pose and eye views from WebXR (requestReferenceSpace, XRWebGLBinding). WebXR loads no models. The logo is files/icon.svg of the three.js repo (MIT). The robot (2026-11-17): three.js with arms; load step: the GLTFLoader arm grabs the file blocks, the WebGL arm pushes them into the GPU; frame step: pose from WebXR, update, draw x2 into the GPU, the frame to the displays. Labels are one-line names stuck to their part (2026-11-17): each arm, its claw and its name share a colour, and the names of what is working light up; the explanation is the step text, the sources are behind X / S.",
+   "bracket": "4 .glb files, about 11 MB",
+   "logo": "three.js",
+   "site": "Our website · index.html",
+   "siteLines": [
+    "one page, served from the laptop: it imports three.js,",
+    "which loads every model and draws every frame"
+   ],
+   "imported": "imported",
+   "gpu": "Headset GPU",
+   "grab": "GLTFLoader add-on",
+   "push": "WebGL 2",
+   "xr": "WebXR",
+   "draw": "draw × 2",
+   "update": "update",
+   "show": "Displays + lenses",
+   "pose": "pose"
+  }
+ }
+}

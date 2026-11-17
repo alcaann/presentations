@@ -1,0 +1,9 @@
+/* the page around the sequences (shared/host.js): canvas, VR button, frame rate, the Proceed? question */
+html, body { margin: 0; height: 100%; background: #0b0d12; color: #ddd; font: 14px system-ui, sans-serif; overflow: hidden; }
+#vr { position: fixed; right: 12px; bottom: 12px; font: 600 15px system-ui; padding: 10px 16px; border-radius: 8px; border: 0; background: #3a6ea5; color: #fff; cursor: pointer; }
+#vr:disabled { background: #444; color: #999; }
+#stats { position: fixed; right: 12px; top: 10px; font: 12px ui-monospace, monospace; color: #9ab; background: #000a; padding: 4px 8px; border-radius: 6px; display: none; }
+#proceed { position: fixed; left: 50%; bottom: 80px; transform: translateX(-50%); background: #000d; padding: 12px 18px; border-radius: 10px; text-align: center; font-size: 16px; }
+#proceed p { margin: 0 0 8px; }
+#proceed button { font: inherit; margin: 0 4px; padding: 5px 14px; background: #333; color: #ddd; border: 1px solid #555; border-radius: 6px; cursor: pointer; }
+#proceed #yes { background: #3a6ea5; color: #fff; border-color: #3a6ea5; }

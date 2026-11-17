@@ -1,0 +1,371 @@
+{
+ "title": "Smell: from a sniff to a thought",
+ "sources": {
+  "AP": {
+   "short": "OpenStax A&P 2e §14.1",
+   "full": "OpenStax, Anatomy and Physiology 2e, §14.1 Sensory Perception, Olfaction (CC BY 4.0). https://openstax.org/books/anatomy-and-physiology-2e/pages/14-1-sensory-perception"
+  },
+  "BIO": {
+   "short": "OpenStax Biology 2e §36.3",
+   "full": "OpenStax, Biology 2e, §36.3 Taste and Smell (CC BY 4.0). https://openstax.org/books/biology-2e/pages/36-3-taste-and-smell"
+  },
+  "W14": {
+   "short": "Wilson et al. 2014",
+   "full": "Wilson, Xu, Sadrian, Courtiol, Cohen, Barnes. Cortical odor processing in health and disease. Prog Brain Res 208:275-305 (2014). https://pmc.ncbi.nlm.nih.gov/articles/PMC4284974"
+  },
+  "ZA": {
+   "short": "Z-Anatomy (CC BY-SA 4.0)",
+   "full": "Z-Anatomy, an open 3D anatomy atlas built in Blender (CC BY-SA 4.0). https://github.com/LluisV/Z-Anatomy"
+  },
+  "MH": {
+   "short": "MakeHuman + MPFB 2 (CC0)",
+   "full": "MakeHuman system assets (CC0), built in Blender with the MPFB 2 add-on. https://files.makehumancommunity.org/asset_packs/makehuman_system_assets/makehuman_system_assets_cc0.zip"
+  },
+  "POLY": {
+   "short": "\"VR Headset\", J-Toastie (CC BY 3.0)",
+   "full": "\"VR Headset\" by J-Toastie, Poly Pizza (CC BY 3.0). https://poly.pizza"
+  },
+  "OURS": {
+   "short": "our reading of the files",
+   "full": "Read from the files themselves on 2026-11-17: the .blend block and struct counts with smell/blend_walk.py, the .glb accessor counts, the file sizes. Details: plans/pipeline.md."
+  },
+  "GLTF": {
+   "short": "Khronos glTF 2.0",
+   "full": "Khronos Group, glTF 2.0 Specification. https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html"
+  },
+  "THREE": {
+   "short": "three.js r180 (MIT)",
+   "full": "three.js r180 (MIT), vendored in smell/vendor/; GLTFLoader: examples/jsm/loaders/GLTFLoader.js. https://threejs.org/docs/"
+  },
+  "WEBGL": {
+   "short": "Khronos WebGL 2.0",
+   "full": "Khronos Group, WebGL 2.0 Specification. https://registry.khronos.org/webgl/specs/latest/2.0/"
+  },
+  "WEBXR": {
+   "short": "W3C WebXR Device API",
+   "full": "W3C, WebXR Device API. https://www.w3.org/TR/webxr/"
+  },
+  "Q3": {
+   "short": "Meta: Quest 3 specs",
+   "full": "Meta for Developers, Compare devices (Quest 3: Snapdragon XR2 Gen 2; displays at 72, 90 or 120 Hz). https://developers.meta.com/vr/essentials/compare-devices"
+  }
+ },
+ "steps": [
+  {
+   "id": "body",
+   "title": "Smell starts with a breath",
+   "text": "A cup of coffee gives off odorant molecules. Everything you smell arrives with the air you breathe in through your nose.",
+   "show": [
+    "body",
+    "airway",
+    "pathway",
+    "brain",
+    "skull"
+   ],
+   "focus": "body",
+   "src": [
+    "AP"
+   ]
+  },
+  {
+   "id": "isolate",
+   "title": "Only what smelling needs",
+   "text": "The airway, the olfactory nerve and the brain areas it reaches. Everything else fades away.",
+   "show": [
+    "airway",
+    "pathway",
+    "brain",
+    "skull",
+    "cup"
+   ],
+   "focus": "upper",
+   "src": []
+  },
+  {
+   "id": "sniff",
+   "title": "1 · Sniff",
+   "text": "He lifts the coffee to his nose. Inhaled air passes a small patch high in the nasal cavity, the olfactory epithelium; most of it goes on down the throat. A sniff sends more air up to the patch.",
+   "highlight": [
+    "nose",
+    "epithelium"
+   ],
+   "show": [
+    "nose",
+    "pathway",
+    "skull",
+    "cup",
+    "cavity",
+    "face"
+   ],
+   "focus": "nose",
+   "src": [
+    "AP"
+   ],
+   "stream": true,
+   "quotes": [
+    "As airborne molecules are inhaled through the nose, they pass over the olfactory epithelial region"
+   ]
+  },
+  {
+   "id": "receptors",
+   "title": "2 · Odorants meet receptors",
+   "text": "Under the roof of the nose. Odorants dissolve in the mucus and reach the neurons' cilia. Each neuron has one receptor type (about 350 in humans); each odorant fits several, so a smell is a combination.",
+   "highlight": [
+    "epithelium"
+   ],
+   "show": [
+    "cup",
+    "cavity",
+    "face"
+   ],
+   "focus": "dive",
+   "src": [
+    "AP",
+    "BIO"
+   ],
+   "scene": "epithelium",
+   "cam": {
+    "pos": [
+     0,
+     1.45,
+     0.9
+    ],
+    "look": [
+     0,
+     2.05,
+     -2.5
+    ]
+   },
+   "stream": true,
+   "quotes": [
+    "Some receptors detect more than one odor"
+   ]
+  },
+  {
+   "id": "cribriform",
+   "title": "3 · Through the skull",
+   "text": "Cut open from the side. The neurons' axons bundle into the olfactory nerve and pass through tiny holes in the cribriform plate, the roof of the ethmoid bone, to the olfactory bulb above.",
+   "highlight": [
+    "cribriform",
+    "olfactory"
+   ],
+   "show": [
+    "face",
+    "cavity",
+    "nose",
+    "pathway",
+    "ethmoid",
+    "cribriform",
+    "skull",
+    "brain",
+    "mouth",
+    "base"
+   ],
+   "focus": "cut",
+   "src": [
+    "AP"
+   ],
+   "cut": true,
+   "cam": {
+    "pos": [
+     0,
+     1.5,
+     0
+    ],
+    "look": [
+     0,
+     1.4,
+     -0.7
+    ]
+   },
+   "quotes": [
+    "through an olfactory foramen in the cribriform plate of the ethmoid bone"
+   ]
+  },
+  {
+   "id": "bulb",
+   "title": "4 · Olfactory bulb: sorting by receptor",
+   "text": "Zoomed in at the plate. All neurons of one receptor type (colour) send their axons to the same glomerulus; mitral cells carry it on along the tract. A smell becomes a pattern of active glomeruli.",
+   "highlight": [
+    "zCell",
+    "zBone",
+    "zGlom",
+    "zMitral"
+   ],
+   "show": [
+    "zoom"
+   ],
+   "focus": "zoom",
+   "src": [
+    "BIO"
+   ],
+   "cut": true,
+   "cam": {
+    "pos": [
+     0,
+     1.5,
+     0
+    ],
+    "look": [
+     0,
+     1.4,
+     -0.6
+    ]
+   },
+   "quotes": [
+    "each glomerulus receives signals from one type of olfactory receptor"
+   ]
+  },
+  {
+   "id": "headset",
+   "title": "But how do we see this?",
+   "text": "Back down through the plate, out of the nose, and there he is: the coffee drinker has been wearing a VR headset all along. So how do we see these 3D scenes, and how were they made?",
+   "show": [
+    "body",
+    "headset"
+   ],
+   "focus": "outro",
+   "src": [],
+   "cam": {
+    "pos": [
+     0,
+     1.5,
+     0
+    ],
+    "look": [
+     0,
+     1.5,
+     -1
+    ]
+   }
+  },
+  {
+   "id": "pipeline-models",
+   "title": "From 3D models to files the headset can draw",
+   "text": "Four models went in. The raw files are big and full of things a real-time scene doesn't need, so we kept only the parts we show and made them lighter, ending as four small .glb files.",
+   "show": [
+    "pipeM",
+    "pipeMB"
+   ],
+   "focus": "models",
+   "src": [
+    "ZA",
+    "MH",
+    "POLY",
+    "OURS",
+    "GLTF"
+   ],
+   "inside": true
+  },
+  {
+   "id": "pipeline-load",
+   "title": "Loaded by three.js",
+   "text": "three.js, the 3D library our page uses, has many arms. The GLTFLoader arm grabs the four files and reads them into meshes; the WebGL arm pushes them into the GPU's memory, once.",
+   "show": [
+    "pipeM",
+    "pipeL",
+    "pipeH"
+   ],
+   "focus": "load",
+   "src": [
+    "THREE",
+    "GLTF",
+    "WEBGL",
+    "Q3"
+   ],
+   "cam": {
+    "pos": [
+     0,
+     1.4,
+     -0.9
+    ],
+    "look": [
+     0,
+     1.3,
+     -3.0
+    ]
+   },
+   "inside": true,
+   "panel": [
+    1.15,
+    0.5,
+    0.7
+   ]
+  },
+  {
+   "id": "pipeline-frame",
+   "title": "Every frame",
+   "text": "Then on every frame: WebXR gives the head pose, three.js updates the scene, the GPU draws it twice (one view per eye), and the frame goes to the displays. Slowed down here: really 72 to 120 times a second.",
+   "show": [
+    "pipeM",
+    "pipeL",
+    "pipeH",
+    "pipeG"
+   ],
+   "focus": "load",
+   "cam": {
+    "pos": [
+     0,
+     1.4,
+     -0.9
+    ],
+    "look": [
+     0,
+     1.3,
+     -3.0
+    ]
+   },
+   "src": [
+    "WEBXR",
+    "THREE",
+    "WEBGL",
+    "Q3"
+   ],
+   "inside": true,
+   "panel": [
+    1.15,
+    0.5,
+    0.7
+   ]
+  },
+  {
+   "id": "pipeline-site",
+   "title": "All inside our website",
+   "text": "And three.js is one file our page imports. Everything you have seen, the man, the anatomy, these boards, is that one web page, opened in the headset's browser.",
+   "show": [
+    "pipeM",
+    "pipeL",
+    "pipeW"
+   ],
+   "focus": "site",
+   "src": [
+    "THREE"
+   ],
+   "inside": true
+  },
+  {
+   "id": "pipeline",
+   "title": "From models to your eyes",
+   "text": "Two machines, in layers. The laptop makes the 3D models and serves the files; the headset runs the page: browser, WebXR, three.js. Set up once, linked by adb over the cable or Wi-Fi.",
+   "show": [
+    "body",
+    "headset",
+    "pipeC"
+   ],
+   "focus": "stage",
+   "src": []
+  },
+  {
+   "id": "pipeline-headset",
+   "title": "Inside the headset",
+   "text": "Then the same loop runs every frame, 72 to 120 times a second: the cameras and motion sensor track the head, the CPU updates the scene, the GPU draws it once per eye, and the displays show it through the lenses. Your head moves, and it starts again.",
+   "show": [
+    "body",
+    "headset",
+    "pipeB"
+   ],
+   "focus": "stage",
+   "src": []
+  }
+ ]
+}

@@ -1,0 +1,372 @@
+{
+ "title": "The sign that grabs you",
+ "plan": "plans/vision.md, pipeline A",
+ "sources": {
+  "KAH": {
+   "short": "Kahneman 2011",
+   "full": "Kahneman, Thinking, Fast and Slow (2011), ch. 1; excerpt in Scientific American, \"Of 2 Minds: How Fast and Slow Thinking Shape Perception and Choice\". https://www.scientificamerican.com/article/kahneman-excerpt-thinking-fast-and-slow/"
+  },
+  "OS": {
+   "short": "OpenStax A&P 2e §14.1–14.2",
+   "full": "OpenStax, Anatomy and Physiology 2e, §14.1 Sensory Perception and §14.2 Central Processing (CC BY 4.0). https://openstax.org/books/anatomy-and-physiology-2e/pages/14-2-central-processing"
+  },
+  "WHITE17": {
+   "short": "White et al. 2017",
+   "full": "White et al., Superior colliculus neurons encode a visual saliency map during free viewing of natural dynamic video. Nat Commun 8:14263 (2017). doi:10.1038/ncomms14263"
+  },
+  "ITTI01": {
+   "short": "Itti & Koch 2001",
+   "full": "Itti & Koch, Computational modelling of visual attention. Nat Rev Neurosci 2:194 (2001). doi:10.1038/35058500"
+  },
+  "COR02": {
+   "short": "Corbetta & Shulman 2002",
+   "full": "Corbetta & Shulman, Control of goal-directed and stimulus-driven attention in the brain. Nat Rev Neurosci 3:201 (2002). doi:10.1038/nrn755"
+  },
+  "FOXE02": {
+   "short": "Foxe & Simpson 2002",
+   "full": "Foxe & Simpson, Flow of activation from V1 to frontal cortex in humans. Exp Brain Res 142:139 (2002). doi:10.1007/s00221-001-0906-7"
+  },
+  "SCHM98": {
+   "short": "Schmolesky et al. 1998 (monkey)",
+   "full": "Schmolesky et al., Signal timing across the macaque visual system. J Neurophysiol 79:3272 (1998). doi:10.1152/jn.1998.79.6.3272"
+  },
+  "FISCH86": {
+   "short": "Fischer & Ramsperger 1986",
+   "full": "Fischer & Ramsperger, Human express saccades: effects of randomization and daily practice. Exp Brain Res 64:569 (1986). doi:10.1007/BF00340494"
+  },
+  "CARP95": {
+   "short": "Carpenter & Williams 1995",
+   "full": "Carpenter & Williams, Neural computation of log likelihood in control of saccadic eye movements. Nature 377:59 (1995). doi:10.1038/377059a0"
+  },
+  "DIC12": {
+   "short": "DiCarlo et al. 2012",
+   "full": "DiCarlo, Zoccolan & Rust, How does the brain solve visual object recognition? Neuron 73:415 (2012). https://pmc.ncbi.nlm.nih.gov/articles/PMC3306444"
+  },
+  "LIU09": {
+   "short": "Liu et al. 2009",
+   "full": "Liu, Agam, Madsen & Kreiman, Timing, timing, timing: fast decoding of object information from intracranial field potentials in human visual cortex. Neuron 62:281 (2009). doi:10.1016/j.neuron.2009.02.025"
+  },
+  "THO96": {
+   "short": "Thorpe et al. 1996",
+   "full": "Thorpe, Fize & Marlot, Speed of processing in the human visual system. Nature 381:520 (1996). doi:10.1038/381520a0"
+  },
+  "COHEN00": {
+   "short": "Cohen et al. 2000",
+   "full": "Cohen et al., The visual word form area: spatial and temporal characterization of an initial stage of reading in normal subjects and posterior split-brain patients. Brain 123:291 (2000). doi:10.1093/brain/123.2.291"
+  },
+  "WOOL21": {
+   "short": "Woolnough et al. 2021",
+   "full": "Woolnough et al., Spatiotemporal dynamics of orthographic and lexical processing in the ventral visual pathway. Nat Hum Behav 5:389 (2021). doi:10.1038/s41562-020-00982-w"
+  },
+  "DEH01": {
+   "short": "Dehaene et al. 2001",
+   "full": "Dehaene et al., Cerebral mechanisms of word masking and unconscious repetition priming. Nat Neurosci 4:752 (2001). doi:10.1038/89551"
+  },
+  "VINCK07": {
+   "short": "Vinckier et al. 2007",
+   "full": "Vinckier et al., Hierarchical coding of letter strings in the ventral stream. Neuron 55:143 (2007). doi:10.1016/j.neuron.2007.05.031"
+  },
+  "KRAV13": {
+   "short": "Kravitz et al. 2013 (monkey anatomy)",
+   "full": "Kravitz, Saleem, Baker, Ungerleider & Mishkin, The ventral visual pathway: an expanded neural framework for the processing of object quality. Trends Cogn Sci 17:26 (2013). https://pmc.ncbi.nlm.nih.gov/articles/PMC3532569"
+  },
+  "MCC04": {
+   "short": "McClure et al. 2004 (one study)",
+   "full": "McClure et al., Neural correlates of behavioral preference for culturally familiar drinks. Neuron 44:379 (2004). doi:10.1016/j.neuron.2004.09.019"
+  },
+  "MONT17": {
+   "short": "Montoya et al. 2017 (meta-analysis)",
+   "full": "Montoya, Horton, Vevea, Citkowicz & Lauber, A re-examination of the mere exposure effect. Psychol Bull 143:459 (2017). doi:10.1037/bul0000085"
+  }
+ },
+ "steps": [
+  {
+   "id": "street",
+   "title": "Just walking",
+   "text": "This is you, walking down a street, not looking for anything in particular.",
+   "quotes": [
+    "System 1 operates automatically and quickly, with little or no effort and no sense of voluntary control."
+   ],
+   "src": [
+    "KAH"
+   ],
+   "show": [
+    "person",
+    "eye",
+    "brain"
+   ],
+   "highlight": [
+    "you"
+   ],
+   "focus": "street",
+   "gaze": "ahead",
+   "person": 1
+  },
+  {
+   "id": "light",
+   "title": "Light reaches the eye",
+   "text": "Light from the billboard passes the cornea and the lens and lands on the retina at the back of the eye, upside down and mirrored.",
+   "quotes": [
+    "It allows light to enter, and along with the lens, focuses light onto the retina.",
+    "The visual field projects onto the retina through the lenses and falls on the retinae as an inverted, reversed image."
+   ],
+   "src": [
+    "OS"
+   ],
+   "show": [
+    "person",
+    "eye",
+    "pathway",
+    "brain"
+   ],
+   "highlight": [
+    "cornea",
+    "lens",
+    "retina"
+   ],
+   "focus": "eye",
+   "anim": "rays",
+   "gaze": "ahead",
+   "time": "t0: the billboard comes into view",
+   "person": 0.15
+  },
+  {
+   "id": "nerve",
+   "title": "Two roads out of the eye",
+   "text": "At the optic chiasm half the fibres cross, so the right side of what you see goes to the left half of the brain. Most go to the thalamus; a branch goes to the superior colliculus.",
+   "quotes": [
+    "Within each eye, the axons projecting from the medial side of the retina decussate at the optic chiasm.",
+    "Another target of the optic tract is the superior colliculus."
+   ],
+   "src": [
+    "OS"
+   ],
+   "show": [
+    "eye",
+    "pathway",
+    "brain"
+   ],
+   "highlight": [
+    "optic_nerve",
+    "chiasm",
+    "optic_tract_l",
+    "lgn_l",
+    "sc_l"
+   ],
+   "focus": "pathway",
+   "anim": "pulse:eyes>chiasm>lgn_l;eyes>chiasm>sc_l",
+   "gaze": "ahead",
+   "time": "still t0 + a few ms"
+  },
+  {
+   "id": "v1",
+   "title": "First stop in the cortex",
+   "text": "The thalamus passes the signal on to the primary visual cortex, at the back of the brain.",
+   "quotes": [
+    "We find a mean onset latency of activity over occipital cortex (C1(e)) at 56 ms, with dorsolateral frontal cortex subsequently active by just 80 ms.",
+    "Visual responses occurred in V1 before any other cortical area."
+   ],
+   "src": [
+    "FOXE02",
+    "SCHM98",
+    "OS"
+   ],
+   "show": [
+    "eye",
+    "pathway",
+    "brain"
+   ],
+   "highlight": [
+    "lgn_l",
+    "radiation",
+    "v1_l"
+   ],
+   "focus": "pathway",
+   "anim": "pulse:lgn_l>radiation>v1_l",
+   "gaze": "ahead",
+   "time": "~56 ms after it comes into view",
+   "labels": [
+    "radiation",
+    "v1_l"
+   ]
+  },
+  {
+   "id": "capture",
+   "title": "The brightest thing wins",
+   "text": "Before you decide to look, your brain picks out what stands out most, and your eyes jump to it.",
+   "quotes": [
+    "Models of visual attention postulate the existence of a saliency map whose function is to guide attention and gaze to the most conspicuous regions in a visual scene.",
+    "This ventral frontoparietal network works as a 'circuit breaker' for the dorsal system, directing attention to salient events."
+   ],
+   "src": [
+    "WHITE17",
+    "ITTI01",
+    "COR02",
+    "FISCH86",
+    "CARP95"
+   ],
+   "show": [
+    "person",
+    "eye",
+    "pathway",
+    "brain"
+   ],
+   "highlight": [
+    "sc",
+    "tpj_r",
+    "ifg_r"
+   ],
+   "focus": "street",
+   "gaze": "saccade",
+   "time": "eyes land: ~100 ms at the fastest, usually later",
+   "person": 0.3,
+   "signs": "salience"
+  },
+  {
+   "id": "object",
+   "title": "What is it? Edges, angles, a sign",
+   "text": "Along the underside of the brain, each stage responds to something more complex than the last: short edges in V1, then angles, then whole objects. Around 100 ms after your eyes land, it is already \"a sign\".",
+   "quotes": [
+    "“core object recognition,” the ability to rapidly recognize objects despite substantial appearance variation, is solved in the brain via a cascade of reflexive, largely feedforward computations that culminate in a powerful neuronal representation in the inferior temporal cortex.",
+    "We could decode object category information from human visual cortex in single trials as early as 100 ms poststimulus.",
+    "It was proposed that each stage of this hierarchy created successively more complex representations by aggregating the output of the simpler feature detectors in the previous stage",
+    "the functional properties of single cells within V2 were well predicted by a simple aggregation of responses across several V1 cells, with a slight increase in both receptive field (RF) size and selectivity for more complex stimuli (angles) than the orientation selectivity observed in V1.",
+    "anatomical evidence indicates that the ventral pathway is actually a complex network of feedforward and feedback projections"
+   ],
+   "src": [
+    "DIC12",
+    "LIU09",
+    "THO96",
+    "KRAV13"
+   ],
+   "show": [
+    "pathway",
+    "brain"
+   ],
+   "highlight": [
+    "v1",
+    "v4",
+    "fusiform",
+    "it"
+   ],
+   "focus": "underside",
+   "anim": "pulse:v1_l>v4_l>it_l;v1_r>v4_r>it_r",
+   "gaze": "billboard",
+   "time": "~100 ms after the eyes land",
+   "cards": true
+  },
+  {
+   "id": "word",
+   "title": "You've read it before deciding to",
+   "text": "A patch of the left fusiform gyrus knows what written words look like. It even responds to words too brief to see, so a sign gets read without you trying.",
+   "quotes": [
+    "the VWF system was revealed as a strictly left-hemispheric activation which, in control subjects, was identical for stimuli presented in the left or in the right hemifield and was located in the middle portion of the left fusiform gyrus.",
+    "High frequency words (180ms) were distinguishable from pseudowords earliest"
+   ],
+   "src": [
+    "COHEN00",
+    "WOOL21",
+    "DEH01",
+    "VINCK07"
+   ],
+   "show": [
+    "pathway",
+    "brain"
+   ],
+   "highlight": [
+    "v1",
+    "vwfa",
+    "midfus"
+   ],
+   "focus": "underside",
+   "anim": "pulse:v1_l>vwfa>midfus;v1_r>splenium>vwfa",
+   "gaze": "billboard",
+   "time": "~180 ms after the eyes land (a common word)"
+  },
+  {
+   "id": "meaning",
+   "title": "It means something to you",
+   "text": "Studies in monkeys trace connections from here to areas for emotion, memory and value.",
+   "quotes": [
+    "occipitotemporo-ventral striatum pathway, which also originates in aIT and supports the assignment of stimulus valence",
+    "brand knowledge for one of the drinks had a dramatic influence on expressed behavioral preferences and on the measured brain responses."
+   ],
+   "src": [
+    "KRAV13",
+    "MCC04"
+   ],
+   "show": [
+    "brain"
+   ],
+   "highlight": [
+    "amygdala",
+    "hippocampus",
+    "ofc",
+    "striatum"
+   ],
+   "focus": "meaning",
+   "anim": "pulse:it_l>amygdala_l,hippocampus_l,ofc_l,striatum",
+   "gaze": "billboard"
+  },
+  {
+   "id": "recap",
+   "title": "A fraction of a second, no effort",
+   "text": "Light, the eye jump, the object, the word, the meaning: none of it needed a decision from you.",
+   "quotes": [
+    "The control of attention is shared by the two systems."
+   ],
+   "src": [
+    "KAH"
+   ],
+   "show": [
+    "eye",
+    "pathway",
+    "brain"
+   ],
+   "highlight": [
+    "retina",
+    "optic_nerve",
+    "chiasm",
+    "lgn_l",
+    "radiation",
+    "v1_l",
+    "sc",
+    "vwfa",
+    "amygdala"
+   ],
+   "labels": [
+    "chiasm",
+    "lgn_l",
+    "v1_l",
+    "vwfa",
+    "amygdala"
+   ],
+   "focus": "overview",
+   "anim": "pulse:eyes>chiasm>lgn_l>radiation>v1_l>v4_l>vwfa>midfus>it_l>amygdala_l",
+   "gaze": "billboard"
+  },
+  {
+   "id": "familiar",
+   "epilogue": true,
+   "title": "Epilogue: next time, it feels familiar",
+   "text": "Days later you pass the billboard again. Seeing something again tends to make people like it a little more, up to a point.",
+   "quotes": [
+    "the mere exposure effect was characterized by a positive slope and negative quadratic effect consistent with an inverted-U shaped curve"
+   ],
+   "src": [
+    "MONT17"
+   ],
+   "show": [
+    "person",
+    "brain"
+   ],
+   "highlight": [
+    "hippocampus",
+    "parahippocampal"
+   ],
+   "focus": "street",
+   "gaze": "billboard",
+   "person": 1
+  }
+ ]
+}

@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The sign that grabs you</title>
+<link rel="stylesheet" href="../shared/host.css">
+<script type="importmap">
+{ "imports": { "three": "../smell/vendor/three-0.180.0.module.min.js", "three/addons/": "../smell/vendor/addons/" } }
+</script>
+</head>
+<body>
+<div id="seq-ui"></div>
+<div id="stats"></div>
+<button id="vr" disabled>Enter VR</button>
+<script type="module">
+// Sequence 1 on its own (for working on it, and for xr-dev/shots.mjs). The whole talk, with the
+// other sequences after it, is ../story/. The sequence itself is sequence.js.
+import { runStory } from '../shared/host.js';
+await runStory([{ title: 'Sequence 1: The Sign', module: 'sequence.js' }]);
+</script>
+</body></html>

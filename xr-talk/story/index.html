@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Seeing and smelling</title>
+<link rel="stylesheet" href="../shared/host.css">
+<script type="importmap">
+{ "imports": { "three": "../smell/vendor/three-0.180.0.module.min.js", "three/addons/": "../smell/vendor/addons/" } }
+</script>
+</head>
+<body>
+<div id="seq-ui"></div>
+<div id="stats"></div>
+<button id="vr" disabled>Enter VR</button>
+<script type="module">
+// The talk as one page and one VR session (plans/story.md). Between sequences the page asks
+// "Proceed to …?"; yes takes the camera up to his face, the world goes black, and the next
+// sequence opens on the same face.
+import { runStory } from '../shared/host.js';
+const seq = new URLSearchParams(location.search).get('seq');
+await runStory([
+  { title: 'Sequence 1: The Sign', module: '../billboard/sequence.js' },
+  // Sequence 3 (the presentation) runs on inside it
+  { title: 'Sequence 2: Coffee', module: '../smell/sequence.js', fallback: '../smell/' },
+], { startAt: seq ? Number(seq) - 1 : 0 });
+</script>
+</body></html>
