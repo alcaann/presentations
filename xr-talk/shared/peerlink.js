@@ -5,18 +5,21 @@
 // default config also tries its own free relay (turn:eu-0/us-0.turn.peerjs.com), so the badge says
 // which route was taken. Both devices need internet for the handshake, and again after a reload.
 //
-//   ?spectator=peer[:code]   the laptop: registers as tdt16-xrtalk-<code> and waits for the goggles
-//   ?spectate=peer:<code>    the goggles: connect to that name and send the talk's state
+//   ?spectate=peer[:code]    the goggles: register as tdt16-xrtalk-<code>, show the code, wait for the laptop
+//   ?spectator=peer[:code]   the laptop: asks for the code (or takes it from the URL), dials it, and
+//                            receives the talk's state
 //
-// The code is short (5 characters), kept in the laptop browser's storage so it stays the same across
-// reloads and days, and can be bookmarked on the goggles. Anyone who knows it could steer the laptop's
-// view, so it is random, not a word.
+// The goggles hold the name because you are wearing them: you read the code there and type it on the
+// laptop's keyboard. It is short (5 characters) and kept in the goggles browser's storage, so it stays
+// the same across reloads and days and the laptop's URL can be bookmarked. Anyone who knows it could
+// steer the laptop's view, so it is random, not a word.
 //
 //   parsePeer(value)      'peer' | 'peer:abc12' -> { code } (code may be ''), else null
 //   newCode()             5 random characters, no look-alikes (0/o, 1/l/i)
 //   routeOf(type)         ICE candidate type -> 'direct' | 'internet' | 'relay'
-//   host({ code, onData, onStatus })   the laptop's side
-//   join({ code, onStatus }) -> { send(obj) -> bool }   the goggles' side
+//   host({ code, other, onData, onStatus }) -> { send }   registers the name (the goggles)
+//   join({ code, other, onData, onStatus }) -> { send }   dials it (the laptop)
+//     send(obj) -> bool: false while unlinked or backed up (the caller keeps what it would have sent)
 //   badge(corner) -> set(state, text, detail)          a small status pill on the page
 
 const PREFIX = 'tdt16-xrtalk-';
@@ -60,7 +63,7 @@ async function route(conn) {
   } catch { return null; }
 }
 
-export async function host({ code, onData, onStatus }) {
+export async function host({ code, other = 'the other device', onData = () => {}, onStatus }) {
   const Peer = await loadPeer();
   let peer = null, conn = null, retry = null;
   const again = (ms) => { clearTimeout(retry); retry = setTimeout(open, ms); };
@@ -68,15 +71,15 @@ export async function host({ code, onData, onStatus }) {
     peer?.destroy();
     onStatus('connecting', 'reaching the PeerJS server…');
     peer = new Peer(PREFIX + code);
-    peer.on('open', () => onStatus('waiting', `code ${code}: waiting for the goggles`));
+    peer.on('open', () => onStatus('waiting', `code ${code}: waiting for ${other}`));
     peer.on('connection', (c) => {
-      conn?.close(); conn = c;   // the latest goggles page wins (it reloaded, or a second one)
+      conn?.close(); conn = c;   // the latest caller wins (it reloaded, or a second one)
       c.on('open', async () => {
-        onStatus('linked', 'goggles linked');
-        const r = await route(c); if (conn === c && r) onStatus('linked', 'goggles linked', ROUTE_TEXT[r]);
+        onStatus('linked', `${other} linked`);
+        const r = await route(c); if (conn === c && r) onStatus('linked', `${other} linked`, ROUTE_TEXT[r]);
       });
       c.on('data', (d) => { if (conn === c) onData(d); });
-      c.on('close', () => { if (conn === c) { conn = null; onStatus('waiting', `code ${code}: goggles gone, waiting`); } });
+      c.on('close', () => { if (conn === c) { conn = null; onStatus('waiting', `code ${code}: ${other} gone, waiting`); } });
     });
     peer.on('disconnected', () => { if (!peer.destroyed) peer.reconnect(); });   // lost the server, not the goggles
     peer.on('error', (e) => {
@@ -87,44 +90,45 @@ export async function host({ code, onData, onStatus }) {
     });
   }
   open();
+  return { send: (obj) => sendOn(conn, obj) };
 }
 
-export async function join({ code, onStatus }) {
+function sendOn(conn, obj) {
+  const dc = conn?.dataChannel;
+  if (!conn?.open || !dc || dc.bufferedAmount > 64 * 1024) return false;
+  conn.send(obj); return true;
+}
+
+export async function join({ code, other = 'the other device', onData = () => {}, onStatus }) {
   const Peer = await loadPeer();
   let peer = null, conn = null, retry = null;
   const again = (ms) => { clearTimeout(retry); retry = setTimeout(dial, ms); };
   function dial() {
     if (!peer || peer.destroyed || peer.disconnected) return start();
-    onStatus('connecting', `calling the laptop (code ${code})…`);
+    onStatus('connecting', `calling ${other} (code ${code})…`);
     const c = peer.connect(PREFIX + code, { reliable: true, serialization: 'json' });
     c.on('open', async () => {
-      conn = c; onStatus('linked', 'laptop linked');
-      const r = await route(c); if (conn === c && r) onStatus('linked', 'laptop linked', ROUTE_TEXT[r]);
+      conn = c; onStatus('linked', `${other} linked`);
+      const r = await route(c); if (conn === c && r) onStatus('linked', `${other} linked`, ROUTE_TEXT[r]);
     });
-    c.on('close', () => { if (conn === c) conn = null; onStatus('waiting', 'laptop gone, calling again'); again(2000); });
+    c.on('data', (d) => { if (conn === c) onData(d); });
+    c.on('close', () => { if (conn === c) conn = null; onStatus('waiting', `${other} gone, calling again`); again(2000); });
     c.on('error', () => again(3000));
   }
   function start() {
     peer?.destroy();
     onStatus('connecting', 'reaching the PeerJS server…');
-    peer = new Peer();   // the goggles need no fixed name
+    peer = new Peer();   // the caller needs no fixed name
     peer.on('open', dial);
     peer.on('disconnected', () => { if (!peer.destroyed) peer.reconnect(); });
     peer.on('error', (e) => {
-      if (e.type === 'peer-unavailable') { onStatus('waiting', `no laptop with code ${code} yet`); again(3000); }
+      if (e.type === 'peer-unavailable') { onStatus('waiting', `no ${other} with code ${code} (yet?)`); again(3000); }
       else if (['network', 'server-error', 'socket-error', 'socket-closed'].includes(e.type)) { onStatus('error', 'no PeerJS server (internet?)', 'retrying'); setTimeout(start, 4000); }
       else { onStatus('error', e.type || String(e)); again(4000); }
     });
   }
   start();
-  return {
-    // false while unlinked or while the channel is backed up (the caller keeps what it would have sent)
-    send(obj) {
-      const dc = conn?.dataChannel;
-      if (!conn?.open || !dc || dc.bufferedAmount > 64 * 1024) return false;
-      conn.send(obj); return true;
-    },
-  };
+  return { send: (obj) => sendOn(conn, obj) };
 }
 
 // a pill in a corner: a coloured dot and a line. Once linked and quiet for 6 s it shrinks to the dot,

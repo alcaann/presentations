@@ -160,9 +160,21 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
     const peer = parsePeer(params.get('spectate'));
     let send, setBadge = null, live = false;
     if (peer) {
+      // the goggles hold the name: the code from the URL, else the one these goggles used before, else a
+      // new one; written into the URL so a reload keeps it. Shown large until the laptop dials in.
+      let code = peer.code;
+      if (!code) { try { code = localStorage.getItem('xrtalk-goggles-code') || ''; } catch {} }
+      code ||= newCode();
+      try { localStorage.setItem('xrtalk-goggles-code', code); } catch {}
+      const u = new URL(location.href); u.searchParams.set('spectate', `peer:${code}`); history.replaceState(null, '', u);
+      const card = document.createElement('div');
+      Object.assign(card.style, { position: 'fixed', left: '50%', top: '38%', transform: 'translate(-50%,-50%)', zIndex: 40, padding: '18px 28px',
+        borderRadius: '16px', background: 'rgba(12,16,24,0.9)', color: '#c9d1db', font: '18px system-ui', textAlign: 'center', lineHeight: 1.5 });
+      card.innerHTML = 'On the laptop, type this code in the spectator:<br>'
+        + `<span style="font:600 72px ui-monospace,monospace;color:#fff;letter-spacing:.12em">${code}</span>`;
+      document.body.append(card);
       setBadge = params.get('badge') === '0' ? () => {} : badge('top-right');
-      if (!peer.code) { setBadge('error', 'no code: open the talk as ?spectate=peer:<the laptop\'s code>'); return () => {}; }
-      const link = await peerJoin({ code: peer.code, onStatus: (st, t, d) => { live = false; setBadge(st, t, d); } });
+      const link = await peerHost({ code, other: 'laptop', onStatus: (st, t, d) => { live = false; setBadge(st, t, d); card.style.display = st === 'linked' ? 'none' : ''; } });
       send = (msg) => link.send(msg);
     } else {
       const url = (params.get('spectate') || 'http://localhost:8798').replace(/\/$/, '') + '/spectate';
@@ -215,20 +227,26 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
       }
     };
     if (peer) {
-      // the code: from the URL, else the one this browser used before, else a new one; then written into
-      // the URL, so a reload (or the drift reload below) keeps it and the goggles' bookmark stays valid
+      // the laptop dials the goggles' code: from the URL, else typed here (the box remembers the last one);
+      // then written into the URL, so a reload (or the drift reload below) dials it again by itself
       let code = peer.code;
-      if (!code) { try { code = localStorage.getItem('xrtalk-code') || ''; } catch {} }
-      code ||= newCode();
-      try { localStorage.setItem('xrtalk-code', code); } catch {}
+      if (!code) {
+        let prev = ''; try { prev = localStorage.getItem('xrtalk-join') || ''; } catch {}
+        wait.innerHTML = '<form id="spec-code" style="text-align:center;line-height:1.8">Spectator: type the code the goggles show<br>'
+          + `<input autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16" value="${prev.replace(/[^a-z0-9]/g, '')}" `
+          + 'style="font:600 56px ui-monospace,monospace;width:6.5em;text-align:center;letter-spacing:.12em;padding:4px 10px;border-radius:12px;border:1px solid #3a4250;background:#171a21;color:#fff">'
+          + '<br><button style="font:600 18px system-ui;padding:8px 18px;border-radius:8px;border:0;background:#2d6cdf;color:#fff;cursor:pointer">Connect</button></form>';
+        wait.style.cursor = 'auto'; document.body.style.cursor = 'auto';
+        const f = wait.querySelector('form'), inp = f.querySelector('input'); inp.focus(); inp.select();
+        code = await new Promise((res) => { f.onsubmit = (ev) => { ev.preventDefault(); const c = inp.value.trim().toLowerCase().replace(/[^a-z0-9]/g, ''); if (c) res(c); else inp.focus(); }; });
+        document.body.style.cursor = '';
+      }
+      try { localStorage.setItem('xrtalk-join', code); } catch {}
       spec = `peer:${code}`;
       const u = new URL(location.href); u.searchParams.set('spectator', spec); history.replaceState(null, '', u);
-      const site = new URL('../', location.href).href.replace(/^https?:\/\//, '').replace(/\/$/, '');
-      wait.innerHTML = `<div style="text-align:center;line-height:1.6">Spectator: waiting for the goggles<br>`
-        + `<span style="font:600 64px ui-monospace,monospace;color:#e8edf3;letter-spacing:.12em">${code}</span><br>`
-        + `on the goggles open <b style="color:#cfd6df">${site}</b>, type this code, then Enter VR</div>`;
+      wait.innerHTML = `Spectator: calling the goggles (code <b style="color:#e8edf3">${code}</b>), then waiting for them to Enter VR…`;
       setBadge = params.get('badge') === '0' ? () => {} : badge('top-right');
-      peerHost({ code, onData: onMsg, onStatus: (st, t, d) => { live = false; setBadge(st, t, d); } });
+      peerJoin({ code, other: 'goggles', onData: onMsg, onStatus: (st, t, d) => { live = false; setBadge(st, t, d); } });
     } else {
       const es = new EventSource(spec.replace(/\/$/, '') + '/spectate/events');
       es.onmessage = (ev) => onMsg(JSON.parse(ev.data));
