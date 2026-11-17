@@ -61,6 +61,12 @@ export function makeXRInput(renderer, { next, back, turn, info, move, recentre }
       const edge = (i, f) => { const k = h + i, p = !!gp.buttons[i]?.pressed; if (p && !prev[k]) f(); prev[k] = p; };
       if (h === 'right') { edge(4, next); edge(5, back); edge(0, next); }
       if (h === 'left') { edge(0, back); if (info) edge(4, info); }   // X: the step's sources
+      // Y held for a second: leave VR. The Quest's own menu offers only Resume for a WebXR page, so
+      // without this the only way out was reloading the page from a debugger.
+      if (h === 'left') {
+        if (gp.buttons[5]?.pressed) { prev.yHeld = (prev.yHeld ?? 0) + dt; if (prev.yHeld > 1 && !prev.yDone) { prev.yDone = true; session.end().catch(() => {}); } }
+        else { prev.yHeld = 0; prev.yDone = false; }
+      }
       if (recentre) { edge(1, recentre); edge(3, recentre); }   // grip or stick click, either hand
       const dz = (v) => (Math.abs(v) < 0.15 ? 0 : v);
       if (h === 'right' && gp.axes.length >= 4) {

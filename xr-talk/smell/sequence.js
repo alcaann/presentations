@@ -17,7 +17,7 @@ const CSS = `
 `;
 const UI = `<div id="ui"><div class="row"><h1 id="t">loading…</h1><button id="prev">◀</button><button id="next">▶</button><button id="more" title="text, sources and controls (T)">text ▾</button></div>
   <div class="more"><p id="x"></p><p class="q" id="q"></p><p class="src" id="s"></p>
-  <p class="src">VR: A / right trigger next · B / left trigger back · right stick turns the model · desktop: ← → steps · click the view, then the mouse looks around (Esc frees it) · right-drag turns the model · I J K L move, ; up, / down (Shift faster) · R back to the step's view · T text · X (left controller) / S: the step's sources on the panel</p></div></div>`;
+  <p class="src">VR: A / right trigger next · B / left trigger back · hold Y: leave VR · right stick turns the model · desktop: ← → steps · click the view, then the mouse looks around (Esc frees it) · right-drag turns the model · I J K L move, ; up, / down (Shift faster) · R back to the step's view · T text · X (left controller) / S: the step's sources on the panel</p></div></div>`;
 
 // Sequence 2 (and 3) of the one-page talk, for ../shared/host.js (contract: ../plans/story.md). The
 // page owns the renderer, the VR session, the controllers and the loop; index.html runs it alone.
