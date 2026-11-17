@@ -39,9 +39,14 @@ camera.position.set(0, 1.5, 0);
 const rig = new THREE.Group(); rig.add(camera); scene.add(rig);
 const street = makeStreet(THREE); scene.add(street.group);
 const anatLight = new THREE.DirectionalLight(0xffffff, 1.2); anatLight.position.set(1, 2, 2); scene.add(anatLight);
-// the street's sky light goes out with the street; on the way out to the next sequence this one takes
-// over as the street fades, so his face stays lit on black
-const faceLight = new THREE.HemisphereLight(0xf2f6ff, 0x6b6458, 0); scene.add(faceLight);
+// The street's sky light, taken out of the street so the number of lights never changes (a change
+// recompiles every material, a stall mid-shot; an extra light, even dark, costs every pixel). Off
+// while the street is hidden, as before. On the way out to Sequence 2 the two lights become its two
+// (its sky light, and its sun from his front: he faces -z here), so his face looks the same on both
+// sides of the cut.
+const sky = street.light; scene.attach(sky);
+const SKY_ST = { a: sky.color.clone(), b: sky.groundColor.clone(), i: 1.6 }, SKY_2 = { a: new THREE.Color(0xffffff), b: new THREE.Color(0x334455), i: 1.4 };
+const SUN_ST = anatLight.position.clone(), SUN_2 = V(-1, 2, -2);
 
 // ---------- the model: world <- stage (placement) <- spin (orientation) <- anatomy
 const stage = new THREE.Group(), spin = new THREE.Group(), anat = new THREE.Group();
@@ -191,8 +196,9 @@ const SHOTS = {
   // size but at his eye height, not standing on the street
   _exit: () => [
     { pos: at(A.head, -0.6, 0.04, 0.05), look: W(A.head), s: 1, dur: 2.5, air: true, person: 1 },
-    { pos: at(eyeMid, 0, 0, 0.5), look: W(eyeMid), s: 1, dur: 2.5, air: true },
-    { pos: at(eyeMid, 0, 0, 0.14), look: W(eyeMid), s: 1, dur: 2.5, air: true, street: 0 },
+    // face to face at a comfortable distance (closer felt queasy in the headset), then the street goes
+    { pos: at(eyeMid, 0, 0, 0.8), look: W(eyeMid), s: 1, dur: 2.5, air: true },
+    { pos: at(eyeMid, 0, 0, 0.45), look: W(eyeMid), s: 1, dur: 2.5, air: true, street: 0 },
   ],
   street: () => [{ pos: V(0, hl.y, 0), look: V(0, hl.y, -10), s: 1, dur: 2.5, person: 1, street: 1 }],
   light: () => [
@@ -571,8 +577,19 @@ let exiting = null, leaving = false;   // exiting: resolves exit() once the came
 function frame(raw, dt, time) {
   if (keys.size) move(0, (keys.has('ArrowUp') ? 1 : 0) - (keys.has('ArrowDown') ? 1 : 0), dt);
   runShot(raw);
-  if (exiting && !shot.active) { const done = exiting; exiting = null; done(); }
-  if (leaving) faceLight.intensity = 1.6 * (1 - streetOp);
+  if (exiting && !shot.active) {
+    // where his eyes are and which way he faces, in your room (the rig's space): the next sequence
+    // puts its man exactly there, so the cut does not show
+    rig.updateMatrixWorld(true);
+    const inv = rig.matrixWorld.clone().invert(), eyes = W(eyeMid).applyMatrix4(inv);
+    const front = W(eyeMid.clone().add(V(0, 0, 1))).applyMatrix4(inv).sub(eyes);
+    const done = exiting; exiting = null; done({ eyes, yaw: Math.atan2(front.x, front.z) });
+  }
+  if (leaving) {
+    const k = 1 - streetOp;
+    sky.color.lerpColors(SKY_ST.a, SKY_2.a, k); sky.groundColor.lerpColors(SKY_ST.b, SKY_2.b, k); sky.intensity = THREE.MathUtils.lerp(SKY_ST.i, SKY_2.i, k);
+    anatLight.position.lerpVectors(SUN_ST, SUN_2, k); anatLight.intensity = THREE.MathUtils.lerp(1.2, 1.6, k);
+  } else sky.intensity = streetOp > 0.01 ? SKY_ST.i : 0;
   const fk = fadeBoost > 0 ? 3 : 1; fadeBoost -= raw;
   streetOp += (streetTarget - streetOp) * Math.min(1, raw * 3 * fk); street.setOpacity(streetOp);
   scene.background.copy(DARK).lerp(SKY, streetOp);

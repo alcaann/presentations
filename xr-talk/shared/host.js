@@ -1,11 +1,11 @@
 // One page, several sequences, one VR session: the page owns the renderer, the VR button and
-// session, controller and keyboard input, the loop, a black fade around your head and the
-// "Proceed to …?" question between sequences. Each sequence is a module whose load(host) returns
+// session, controller and keyboard input, the loop, and the "Proceed to …?" question between
+// sequences, which then hand over without a cut (the next opens on the frame the last one ended on). Each sequence is a module whose load(host) returns
 // its own scene and camera and a few hooks (the contract is in plans/story.md):
 //
 //   { scene, camera, frame(raw, dt, time), start({ enter, xr }), ui, check(),
 //     input: { next, back, info, move, turn, recentre }, xr: { start(), ready(eyeH), end() },
-//     exit(): Promise (ends close up on his face), stop() }
+//     exit(): Promise<{ eyes, yaw }> (ends on his face; where it is in your room), stop() }
 //
 // raw: real seconds since the last frame (camera moves, fades), dt: the same capped at 0.05 s
 // (sticks). Sequences call host.end() when Next is pressed on their last step.
@@ -53,30 +53,30 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
       for (const m of [o.material ?? []].flat()) { for (const v of Object.values(m)) if (v?.isTexture) v.dispose(); m.dispose(); }
     });
   }
+  // The next sequence is set up and its shaders compiled while the current one is still on screen,
+  // then they swap from one frame to the next: no black in between
   async function start(i, opts = {}) {
-    const seq = await load(i);
+    const seq = await load(i), xr = renderer.xr.isPresenting;
+    seq.camera.aspect = innerWidth / innerHeight; seq.camera.updateProjectionMatrix();
+    if (xr) seq.xr?.start?.();
+    seq.start?.({ ...opts, xr: xr ? eyeH : null });
+    seq.frame(0, 0, clock.elapsedTime);   // what its first frame shows, so that is what gets compiled
+    await renderer.compileAsync(seq.scene, seq.camera).catch(() => {});
+    spinner.visible = false;
     if (active) drop(active);
     active = seq; at = i;
     if (seq.ui) $('seq-ui').replaceChildren(seq.ui);
-    seq.camera.add(lid, spinner);
+    seq.camera.add(spinner);
     resize();
-    const xr = renderer.xr.isPresenting;
-    if (xr) seq.xr?.start?.();
-    seq.start?.({ ...opts, xr: xr ? eyeH : null });
   }
 
-  // ---------- black around your head (scene changes happen behind it)
-  const lid = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 8), new THREE.MeshBasicMaterial({ color: 0, side: THREE.BackSide, transparent: true, opacity: 0, depthTest: false, depthWrite: false }));
-  lid.renderOrder = 1000; lid.visible = false;
-  // while the next sequence is still loading behind the black: a turning ring, no words
+  // while the next sequence is still loading (you stay on his face): a small turning ring, no words
   const spinner = (() => {
     const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
     g.lineWidth = 10; g.lineCap = 'round';
     for (let i = 0; i < 12; i++) { g.strokeStyle = `rgba(170,185,205,${0.12 + 0.8 * i / 11})`; g.beginPath(); g.arc(64, 64, 44, i * Math.PI / 6, i * Math.PI / 6 + 0.3); g.stroke(); }
     const m = canvasPlane(THREE, c, 0.03, 1001); m.position.set(0, 0, -0.25); m.visible = false; return m;
   })();
-  const fade = { v: 0, to: 0, rate: 2, done: null };
-  const fadeTo = (to, secs) => new Promise((r) => { if (fade.v === to) r(); else Object.assign(fade, { to, rate: 1 / secs, done: r }); });
 
   // ---------- between sequences: Proceed? (in front of you in the scene; also as buttons on the desktop)
   function ended(i) {
@@ -104,16 +104,16 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
   }
   async function transition(i) {
     busy = true;
-    await active.exit?.();          // up to his face, the street goes dark
-    await fadeTo(1, 0.6);
-    spinner.visible = true;
+    // up to his face as the street goes dark; exit() tells where his eyes are in your room and which
+    // way he faces, and the next sequence opens on the same face in the same place
+    const face = await active.exit?.();
+    const slow = setTimeout(() => { spinner.visible = true; }, 400);   // only if it is still loading
     try { await load(i + 1); } catch (e) {
       console.warn(`${SEQS[i + 1].title}: no module yet (${e.message}), opening its page`);
       location.href = new URL(SEQS[i + 1].fallback, location.href).href; return;
     }
-    spinner.visible = false;
-    await start(i + 1, { enter: 'face' });   // it opens on his face, on black
-    await fadeTo(0, 0.8);
+    clearTimeout(slow);
+    await start(i + 1, { enter: 'face', face });
     busy = false;
   }
 
@@ -151,19 +151,13 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
   let frames = 0, fpsT = 0;
   // ?enter=face: open the first sequence as if coming from the one before (to work on that opening)
   await start(startAt, { enter: params.get('enter') ?? undefined });
-  // the black and the ring are drawn for the first time mid-transition: compile and upload them now,
-  // so that first frame is not a white square
-  lid.visible = spinner.visible = true; renderer.compile(active.scene, active.camera); renderer.initTexture(spinner.material.map);
-  lid.visible = spinner.visible = false;
+  // the ring is drawn for the first time mid-transition: compile and upload it now, so that first frame
+  // is not a white square
+  spinner.visible = true; renderer.compile(active.scene, active.camera); renderer.initTexture(spinner.material.map); spinner.visible = false;
   renderer.setAnimationLoop(() => {
     const real = Math.min(clock.getDelta(), 0.5), raw = real * speed, dt = Math.min(raw, 0.05), time = clock.elapsedTime;
     xrInput(dt);
     active.frame(raw, dt, time);
-    if (fade.v !== fade.to) {
-      fade.v = fade.to > fade.v ? Math.min(fade.to, fade.v + raw * fade.rate) : Math.max(fade.to, fade.v - raw * fade.rate);
-      if (fade.v === fade.to) { fade.done?.(); fade.done = null; }
-    }
-    lid.material.opacity = fade.v; lid.visible = fade.v > 0;
     if (spinner.visible) spinner.rotation.z -= real * 5;
     renderer.render(active.scene, active.camera);
     if (stats) { frames++; fpsT += real; if (fpsT > 1) { stats.textContent = `${(frames / fpsT).toFixed(0)} fps · ${renderer.info.render.calls} draw calls · ${(renderer.info.render.triangles / 1000).toFixed(0)}k tris`; frames = 0; fpsT = 0; } }

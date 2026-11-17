@@ -107,6 +107,7 @@ const skin = meshes.get('(person) body');
 // the headset he turns out to be wearing at the end: "VR Headset" by J-Toastie (Poly Pizza, CC BY 3.0),
 // seated on his eyes. Its model faces +x and is ~1.1 units wide; a real visor is ~19 cm wide.
 role.headset = [];
+const HS_PARTS = [];   // its meshes in its own frame (front +x), for the small copies on the pipeline boards
 {
   const hs = (await new GLTFLoader().loadAsync(here('headset.glb'))).scene;
   const eyes = new THREE.Box3().setFromObject(meshes.get('(person) low-poly'));
@@ -125,8 +126,10 @@ role.headset = [];
     if (isFinite(gap)) hs.position.z -= gap + 0.0015;   // a little into the soft face pad
     console.info('headset moved back', (gap * 1000).toFixed(1), 'mm onto the face');
   }
+  hs.updateMatrixWorld(true); const hsInv = hs.matrixWorld.clone().invert();
   hs.traverse((o) => {
     if (!o.isMesh) return;
+    HS_PARTS.push({ geo: o.geometry, mat: o.material.clone(), M: hsInv.clone().multiply(o.matrixWorld) });
     const m = o.material; m.transparent = true;
     o.userData = { base: m.color.clone(), op: 0, target: 0 }; o.visible = false;
     meshes.set('(headset) ' + o.name, o); role.headset.push(o);
@@ -1012,6 +1015,11 @@ const PIPE_STYLE = (params.get('blocks') ?? '').toUpperCase();
 const PIPE_STYLES = ['C', 'B', ...(['A', 'D'].includes(PIPE_STYLE) ? [PIPE_STYLE] : [])];
 const PIPE = await fetch(here('pipeline.json')).then((r) => r.json()).catch(() => ({ stages: [], devices: {}, layers: {} }));
 const pipeFace = [], pipeMove = []; let pipeRole = null;
+// the WebXR and OpenXR logos, unaltered (credits in pipeline.json, models.load.note); a missing one falls back to its name
+const LOGOS = Object.fromEntries(await Promise.all(['webxr', 'openxr'].map(async (k) => {
+  const img = new Image(); img.src = here(`logos/${k}.svg`);
+  return [k, await img.decode().then(() => img, () => null)];
+})));
 {
   const reg = (m, name) => { m.name = '(pipe) ' + name; m.material.transparent = true; m.userData = { base: m.material.color.clone(), emis: m.material.emissive?.clone(), op: 0, target: 0, schematic: true }; m.visible = false; anat.add(m); meshes.set(m.name, m); role[pipeRole].push(m); return m; };
   const std = (color, extra = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.55, ...extra });
@@ -1102,9 +1110,10 @@ const pipeFace = [], pipeMove = []; let pipeRole = null;
     const hy = tower(PIPE.layers?.headset ?? [], 0.85, 'headset layer', 0x31415a, 0x6fa8dc), ly = tower(PIPE.layers?.laptop ?? [], -0.9, 'laptop layer', 0x3d3d3d, 0x8f8f8f);
     text([{ text: 'Quest 3', font: '700 54px system-ui', color: '#9fd3ff', lh: 64 }], 0.3, V(0.85, hy((PIPE.layers?.headset ?? []).length) + 0.02, 0.15), 'tower title headset');
     text([{ text: 'Laptop', font: '700 54px system-ui', color: '#cccccc', lh: 64 }], 0.3, V(-0.9, ly((PIPE.layers?.laptop ?? []).length) + 0.02, 0.15), 'tower title laptop');
-    const br = new THREE.CatmullRomCurve3([V(-0.62, ly(2), 0.3), V(-0.2, ly(2) + 0.15, 0.75), V(0.3, hy(2) + 0.15, 0.75), V(0.57, hy(2), 0.3)]);
+    const hb = Math.max(0, (PIPE.layers?.headset ?? []).findIndex((l) => /browser/i.test(l)));   // the tunnel ends at the browser's floor
+    const br = new THREE.CatmullRomCurve3([V(-0.62, ly(2), 0.3), V(-0.2, ly(2) + 0.15, 0.75), V(0.3, hy(hb) + 0.15, 0.75), V(0.57, hy(hb), 0.3)]);
     tube(br.getPoints(60), 0.012, 0xffb347, 'tunnel'); packets(br, 0xffd88a, 5, 0.15, 'tunnel');
-    text([{ text: 'adb reverse, over USB-C or Wi-Fi', font: '600 42px system-ui', color: '#ffd88a', lh: 52 }, { text: 'the headset opens localhost:8798', font: '38px system-ui', color: '#dde', lh: 48 }], 0.45, V(0, Math.max(ly(2), hy(2)) + 0.32, 0.8), 'tunnel label');
+    text([{ text: 'adb reverse, over USB-C or Wi-Fi', font: '600 42px system-ui', color: '#ffd88a', lh: 52 }, { text: 'the headset opens localhost:8798', font: '38px system-ui', color: '#dde', lh: 48 }], 0.45, V(0, Math.max(ly(2), hy(hb)) + 0.32, 0.8), 'tunnel label');
     const up = new THREE.CatmullRomCurve3([V(0.85, hy((PIPE.layers?.headset ?? []).length - 1) + 0.08, 0.15), V(0.55, 1.75, 0.2), V(0.12, 1.66, 0.12)]);
     tube(up.getPoints(40), 0.006, 0x6fa8dc, 'to the headset'); packets(up, 0x9fd3ff, 3, 0.3, 'frames');
   }
@@ -1181,6 +1190,27 @@ const pipeFace = [], pipeMove = []; let pipeRole = null;
         const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
         const m = reg(new THREE.Mesh(new THREE.PlaneGeometry(h * c.width / c.height, h), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })), name);
         m.position.copy(at); m.renderOrder = 2; m.userData.max = 1; return m;
+      };
+      // a logo on a white plate, h tall, in place of a name pill (it lights up the same way); no logo: the pill
+      const CROP = { openxr: [90, 55, 1255, 390] };   // the OpenXR file has wide margins
+      const plate = (k, h, at, name, fallback, color) => {
+        const img = LOGOS[k]; if (!img) return pill(fallback, color, h, at, name);
+        const [sx, sy, sw, sh] = CROP[k] ?? [0, 0, img.naturalWidth, img.naturalHeight], ih = 150, pad = 24;
+        const c = document.createElement('canvas'), g = c.getContext('2d'); c.height = ih + 2 * pad; c.width = Math.round(ih * sw / sh) + 2 * pad + 16;
+        g.fillStyle = '#ffffff'; g.beginPath(); g.roundRect(0, 0, c.width, c.height, 34); g.fill();
+        g.drawImage(img, sx, sy, sw, sh, pad + 8, pad, c.width - 2 * pad - 16, ih);
+        const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+        const m = reg(new THREE.Mesh(new THREE.PlaneGeometry(h * c.width / c.height, h), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })), name);
+        m.position.copy(at); m.renderOrder = 2; m.userData.max = 1; return m;
+      };
+      // the headset he wears (headset.glb), small, w wide, turned yaw from facing you
+      const miniHeadset = (at, w, yaw, name, see = 0) => {   // see > 0: a see-through shell at that opacity
+        const box = new THREE.Box3();
+        for (const p of HS_PARTS) { p.geo.computeBoundingBox(); box.union(p.geo.boundingBox.clone().applyMatrix4(p.M)); }
+        const size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3()), k = w / size.z;   // its width runs along z (it faces +x)
+        const T = new THREE.Matrix4().compose(at, new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), -Math.PI / 2 + yaw), V(k, k, k)).multiply(new THREE.Matrix4().makeTranslation(-mid.x, -mid.y, -mid.z));
+        HS_PARTS.forEach((p, i) => { const m = reg(new THREE.Mesh(p.geo, p.mat.clone()), `${name} ${i}`); if (see) { m.userData.max = see; m.userData.glass = true; } T.clone().multiply(p.M).decompose(m.position, m.quaternion, m.scale); });
+        return size.y * k;   // its height
       };
       // the three.js tile: a dark rounded slab, the logo's six triangles raised in white (files/icon.svg, MIT)
       const S = 0.62, rr = 0.07, sh = new THREE.Shape();
@@ -1260,20 +1290,71 @@ const pipeFace = [], pipeMove = []; let pipeRole = null;
       const XB = ROB.P2(-1.62, TY);
       reg(new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.3, 0.08), std(0x5a43a0, { roughness: 0.35, metalness: 0.2 })), 'webxr block').position.set(XB.x, XB.y, 0);
       for (const dx of [-0.12, 0.12]) for (const dy of [-0.07, 0.07]) reg(new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 8), std(0x0d1117, { emissive: 0x335577, emissiveIntensity: 0.6 })), `webxr camera ${dx} ${dy}`).position.set(XB.x + dx, XB.y + dy, 0.045);
-      ROB.lab.xr = pill(LD.xr, COL.pose[1], 0.085, V(XB.x, XB.y + 0.23, 0.05), 'webxr label');
+      ROB.lab.xr = plate('webxr', 0.1, V(XB.x, XB.y + 0.24, 0.05), 'webxr label', LD.xr, COL.pose[1]);
+      // OpenXR (plans/pipeline.md, "Under WebXR"): the layer under WebXR, inside the browser. The pose comes up
+      // through it into WebXR; the finished frame goes back down through it (the gate on the conveyor)
+      const OXR = [0x1f9e8f, '#5fe0cf'], OXL = LD.openxr?.name ?? 'OpenXR';
+      reg(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.1), std(OXR[0], { roughness: 0.35, metalness: 0.2 })), 'openxr slab').position.set(XB.x, XB.y - 0.26, 0);
+      ROB.lab.oxr = plate('openxr', 0.12, V(XB.x, XB.y - 0.26, 0.056), 'openxr label', OXL, OXR[1]);   // its logo on its face
+      ROB.XB = XB;
       const gear = reg(new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.02, 6, 9), std(0xffb347, { metalness: 0.4, roughness: 0.35 })), 'update gear'); gear.position.set(0.36, TY + 0.36, 0.05); ROB.gear = gear;
       ROB.lab.update = pill(LD.update, '#ffb347', 0.075, V(0.58, TY + 0.36, 0.05), 'update label');
       const DB = ROB.P2(1.62, CY);
-      reg(new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.32, 0.06), std(0x1a1d23, { roughness: 0.4 })), 'displays body').position.set(DB.x, DB.y, -0.01);
+      // the displays and lenses inside the headset itself (a small copy of the one he wears, its shell see-through):
+      // one device, where the frame goes in and the pose comes from
+      const HW = 0.72, hh = miniHeadset(V(DB.x, DB.y + 0.01, -0.06), HW, 0.15, 'quest', 0.3);
       ROB.panels = [-0.13, 0.13].map((dx) => { const m = reg(new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.2), std(0x23324a, { emissive: 0x6fa8dc, emissiveIntensity: 0.2 })), 'display panel ' + dx); m.position.set(DB.x + dx, DB.y, 0.025); return m; });
       for (const dx of [-0.13, 0.13]) { const l = reg(new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.02, 32), std(0xcfe8ff, { roughness: 0.1 })), 'lens ' + dx); l.position.set(DB.x + dx, DB.y, 0.06); l.rotation.x = Math.PI / 2; l.userData.max = 0.45; l.userData.glass = true; }
-      ROB.lab.show = pill(LD.show, '#ffffff', 0.085, V(DB.x, DB.y + 0.25, 0.05), 'displays label');
-      tube([V(0.36, CY, -0.01), V(DB.x - 0.29, CY, -0.01)], 0.008, 0x8a93a0, 'conveyor');
+      ROB.lab.show = pill(LD.show, '#ffffff', 0.085, V(DB.x, DB.y + hh / 2 + 0.1, 0.12), 'displays label');
+      tube([V(0.36, CY, -0.01), V(DB.x - HW / 2 + 0.02, CY, -0.01)], 0.008, 0x8a93a0, 'conveyor');
+      { const GX = 1.0, w = 0.28, h = 0.2, t = 0.024;   // the frame passes through it on its way to the displays
+        for (const [n, x, y, bw, bh] of [['top', GX, CY + h / 2, w, t], ['bottom', GX, CY - h / 2, w, t], ['left', GX - w / 2, CY, t, h], ['right', GX + w / 2, CY, t, h]])
+          reg(new THREE.Mesh(new THREE.BoxGeometry(bw, bh, 0.05), std(OXR[0], { roughness: 0.35, metalness: 0.2 })), 'openxr gate ' + n).position.set(x, y, 0.1);
+        ROB.lab.oxr2 = plate('openxr', 0.085, V(GX, CY + h / 2 + 0.09, 0.05), 'openxr gate label', OXL, OXR[1]);
+        // the slab and the gate are one layer: a teal rail joins them. The gate is the headset's door: frames go in
+        // through it, poses come out of it and ride the rail up to WebXR
+        const YR = CY - 0.45, line = (...p) => { const c = new THREE.CurvePath(); for (let i = 1; i < p.length; i++) c.add(new THREE.LineCurve3(p[i - 1], p[i])); return c; };
+        const rail = line(V(GX, CY - h / 2 - 0.012, 0.1), V(GX, YR + 0.05, 0.1), V(GX, YR, 0), V(XB.x, YR, 0), V(XB.x, TY - 0.335, 0));
+        reg(new THREE.Mesh(new THREE.TubeGeometry(rail, 128, 0.014, 8), std(OXR[0], { roughness: 0.35, metalness: 0.2 })), 'openxr rail');
+        packets(line(V(GX, CY - h / 2 - 0.012, 0.12), V(GX, YR + 0.05, 0.12), V(GX, YR, 0.02), V(XB.x, YR, 0.02), V(XB.x, TY - 0.335, 0.02)), COL.pose[0], 4, 0.12, 'openxr rail pose'); }
       // the things the arms carry: the pose, the two draw jobs (left and right eye), the finished frame
       const tag = (txt, w, h, bg, name) => { const c = document.createElement('canvas'); c.width = 256; c.height = Math.round(256 * h / w); const g = c.getContext('2d'); g.fillStyle = bg; g.beginPath(); g.roundRect(0, 0, c.width, c.height, 30); g.fill(); g.fillStyle = '#fff'; g.font = `800 ${Math.round(c.height * 0.55)}px system-ui`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, c.width / 2, c.height / 2 + 4);
         const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; return reg(new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tx })), name); };
       ROB.poseTok = tag('pose', 0.14, 0.07, '#6a4fc0', 'pose token'); ROB.L = tag('L', 0.08, 0.08, '#2f8f5b', 'draw token L'); ROB.R = tag('R', 0.08, 0.08, '#2f8f5b', 'draw token R');
       ROB.img = tag('frame', 0.18, 0.11, '#7a3b4a', 'frame token');
+      // X · one road to the headset (step pipeline-openxr), left of the WebXR block: our page (three.js on WebXR in
+      // the browser) and native apps made with Unity or Unreal all plug into the same OpenXR layer over the
+      // headset's runtime; poses come up through it (violet), finished frames go down (green)
+      pipeRole = 'pipeX'; role.pipeX = [];
+      { const OX = LD.openxr ?? {}, XC = -3.65, XY = TY - 0.95, HT = 0.13, GP = 0.02;
+        reg(new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.22, 0.1), std(0x1a1d23, { roughness: 0.4 })), 'runtime block').position.set(XC, XY - 0.3, 0);
+        pill(OX.runtime ?? 'Headset runtime (Horizon OS)', '#ffffff', 0.075, V(XC, XY - 0.3, 0.06), 'runtime label');
+        // under the runtime, the device it runs on
+        const hh = miniHeadset(V(XC, XY - 0.6, 0.02), 0.5, 0.35, 'runtime headset');
+        pill(OX.device ?? 'Quest 3', '#9fd3ff', 0.065, V(XC, XY - 0.6 - hh / 2 - 0.09, 0.3), 'runtime headset label');
+        tube([V(XC, XY - 0.41, 0), V(XC, XY - 0.6 + hh / 2 - 0.02, 0)], 0.01, 0x8a93a0, 'runtime to headset');
+        reg(new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.18, 0.12), std(OXR[0], { roughness: 0.35, metalness: 0.2 })), 'openxr bar').position.set(XC, XY, 0);
+        plate('openxr', 0.14, V(XC, XY, 0.07), 'openxr bar label', OXL, OXR[1]);
+        // the rows line up what does the same job: three.js with Unity and Unreal (what you write in), WebXR in the
+        // browser with their OpenXR plug-in (what talks to OpenXR; the browser is the program OpenXR sees)
+        (OX.rows ?? []).forEach((r, k) => { const m = pill(r, '#9aa6b5', 0.055, V(0, 0, 0.06), `row label ${k}`); m.position.set(XC - 1.0 - m.geometry.parameters.width / 2, XY + 0.08 + GP + HT / 2 + (1 - k) * (HT + GP), 0.06); });
+        const apps = OX.apps ?? [['three.js (our page)', 'WebXR, in Quest Browser'], ['Unity', 'OpenXR plug-in'], ['Unreal Engine', 'OpenXR plug-in']];
+        let top = XY;
+        apps.forEach((col, j) => {
+          const x = XC + (j - 1) * 0.64, c = j === 0 ? 0x3a4f6e : 0x3b3e46;
+          [...col].reverse().forEach((name, k) => {   // bottom up: the part that plugs into OpenXR first
+            const y = XY + 0.08 + GP + HT / 2 + k * (HT + GP);
+            reg(new THREE.Mesh(new THREE.BoxGeometry(0.54, HT, 0.1), std(c, { roughness: 0.45 })), `app ${j} ${k}`).position.set(x, y, 0);
+            const lb = pill(name, j === 0 && k === col.length - 1 ? '#ffd88a' : '#ffffff', 0.06, V(x, y, 0.06), `app label ${j} ${k}`), lw = lb.geometry.parameters.width;
+            if (lw > 0.5) lb.scale.setScalar(0.5 / lw);   // long names shrink to fit their box
+          });
+          const ct = XY + 0.08 + col.length * (HT + GP); top = Math.max(top, ct);
+          const upC = new THREE.CatmullRomCurve3([V(x - 0.21, XY - 0.3, 0.09), V(x - 0.21, ct, 0.09)]), dnC = new THREE.CatmullRomCurve3([V(x + 0.21, ct, 0.09), V(x + 0.21, XY - 0.3, 0.09)]);
+          tube(upC.getPoints(4), 0.005, COL.pose[0], `app pose line ${j}`); packets(upC, COL.pose[0], 3, 0.35, `app pose ${j}`);
+          tube(dnC.getPoints(4), 0.005, COL.draw[0], `app frame line ${j}`); packets(dnC, COL.draw[0], 3, 0.35, `app frame ${j}`);
+        });
+        text([white(OX.title ?? 'One road to the headset', 60, 800), white(OX.sub ?? 'pose up, frame down: the same calls, whichever engine', 40, 400, '#c8d0dc')], 1.9, V(XC, top + 0.36, 0), 'one road title', false);
+      }
       ROBOT = ROB;
       pipeRole = 'pipeL';
       // W · the website: a matryoshka round everything, its front half glass, the back half opened towards you
@@ -1298,7 +1379,7 @@ const pipeFace = [], pipeMove = []; let pipeRole = null;
       text([white(LD.site, 110, 800), ...LD.siteLines.map((l) => white(l, 56))], 7.5, V(cx, base + H + 1.9, 0), 'website title', false);
       text([white('← ' + LD.imported, 150, 800, '#ffd88a')], 1.6, V(1.15, TY, 0.05), 'imported', false);
     }
-    for (const m of [...role.pipeM, ...role.pipeMB, ...role.pipeL, ...(role.pipeW ?? []), ...(role.pipeG ?? []), ...(role.pipeH ?? [])]) if (m.parent === anat) board.add(m);
+    for (const m of [...role.pipeM, ...role.pipeMB, ...role.pipeL, ...(role.pipeW ?? []), ...(role.pipeG ?? []), ...(role.pipeH ?? []), ...(role.pipeX ?? [])]) if (m.parent === anat) board.add(m);
   }
 }
 // the three.js robot at work: on the load step its GLTFLoader arm carries the file blocks into three.js and its
@@ -1322,6 +1403,7 @@ function robotTick(time) {
   let grab = [RG, 0], push = [RP, 0], pose = [RQ, 0], draw = [RD, 0];
   R.cubes.forEach((c, j) => put(c, R.pile[j]));
   for (const m of [R.poseTok, R.L, R.R, R.img]) hide(m);
+  R.oxrUp = R.oxrDown = false;
   R.lid.material.emissive.set(0x7fd1ff); R.lid.material.emissiveIntensity = 0;
   if (id === 'pipeline-load') {
     const per = 2.6, n = R.cubes.length, tt = t % (n * per + 1.4), k = Math.floor(tt / per), u = (tt - k * per) / per;
@@ -1341,7 +1423,9 @@ function robotTick(time) {
     const u = (t % 3.2) / 3.2, X = P(-1.36, TY), RB = P(-0.42, TY), PL = P(-0.12, TY - 0.4), G2 = P(-0.06, CY + 0.33);
     const q = u < 0.2 ? mix2(RQ, X, seg2(u, 0, 0.2)) : u < 0.25 ? X : u < 0.45 ? mix2(X, RB, seg2(u, 0.25, 0.45)) : mix2(RB, RQ, seg2(u, 0.47, 0.65));
     pose = [q, u > 0.19 && u < 0.46 ? seg2(u, 0.19, 0.25) : 0];
-    if (u > 0.12 && u < 0.25) put(R.poseTok, X); else if (u >= 0.25 && u < 0.47) put(R.poseTok, q, u < 0.45 ? 1 : 1 - seg2(u, 0.45, 0.47));
+    if (u > 0.02 && u <= 0.12) put(R.poseTok, mix2(P(R.XB.x, TY - 0.26), X, seg2(u, 0.02, 0.12)));   // up from OpenXR into WebXR
+    if (u > 0.12 && u < 0.25) put(R.poseTok, X);
+    R.oxrUp = u > 0.01 && u < 0.14; R.oxrDown = u > 0.88 && u < 0.95;   // the frame passes the OpenXR gate else if (u >= 0.25 && u < 0.47) put(R.poseTok, q, u < 0.45 ? 1 : 1 - seg2(u, 0.45, 0.47));
     const d = u < 0.45 ? RD : u < 0.53 ? mix2(RD, PL, seg2(u, 0.45, 0.53)) : u < 0.63 ? mix2(PL, G2, seg2(u, 0.53, 0.63)) : u < 0.7 ? mix2(G2, PL, seg2(u, 0.63, 0.7)) : u < 0.8 ? mix2(PL, G2, seg2(u, 0.7, 0.8)) : mix2(G2, RD, seg2(u, 0.8, 0.95));
     const carrying = (u > 0.53 && u < 0.63) || (u > 0.7 && u < 0.8);
     draw = [d, carrying ? 1 : 0];
@@ -1357,7 +1441,7 @@ function robotTick(time) {
   // the names of what is working now are bright, the others dim, so each name reads with its action
   const work = (p) => p[0] !== RG && p[0] !== RP && p[0] !== RQ && p[0] !== RD;
   const on = { grab: work(grab), push: work(push), pose: work(pose), xr: work(pose), draw: work(draw),
-    update: id === 'pipeline-frame' && R.gearFast, show: R.panels[0].material.emissiveIntensity > 0.5 };
+    update: id === 'pipeline-frame' && R.gearFast, show: R.panels[0].material.emissiveIntensity > 0.5, oxr: R.oxrUp, oxr2: R.oxrDown };
   const back = id === 'pipeline-frame' ? { grab: 1, push: 1 } : {};
   for (const [k, m] of Object.entries(R.lab)) { const u = m.userData; u.max += ((back[k] ? 0.08 : on[k] ? 1 : 0.35) - u.max) * 0.15; }
 }
@@ -1410,6 +1494,8 @@ const FOCUS = {
   // the pipeline: the man life size, standing, the blocks around him
   models: { at: gogAt(0.2, 1.3), scale: 1 / GOG.k, dist: 3.1 },              // inside the goggles: the board, life size
   load: { at: gogAt(0, -1.35), scale: 1 / GOG.k, dist: 3.0 },   // the robot, with the files above and the GPU below   // down the loader pipe to the three.js tile, the columns still above
+  frame: { at: gogAt(0, -2.0), scale: 1 / GOG.k, dist: 3.2 },   // every frame: the robot down to the headset under the conveyor
+  openxr: { at: gogAt(-3.8, -2.15), scale: 1 / GOG.k, dist: 3.0 },   // one road to the headset, left of the robot
   site: { at: gogAt(-0.1, 3.0), scale: 0.12 / GOG.k, dist: 1.9 },    // out until the website matryoshka round it all is in view   // the models board, to his right; he stands at its left
   stage: { at: new THREE.Vector3(0, 1.05, 0.15), scale: 1, dist: 2.4, yaw: -Math.PI * 0.18, floor: true },
   outro: { at: new THREE.Vector3(0, A.head.y - 0.13, 0.0), scale: 1.5, dist: 0.85, yaw: -Math.PI * 0.4 },   // from his side: head and upper body, the pipeline slides go around him
@@ -1467,13 +1553,13 @@ function setPanel(step) {
     for (const k of step.src ?? []) lines.push({ text: srcOf(k).full, font: '28px system-ui', color: '#aab3c2', lh: 38 });
     lines.push({ text: 'X / S: back to the step', font: '26px system-ui', color: '#667', lh: 34 });
   } else {
-    lines.push({ text: step.title, font: '600 56px system-ui', color: '#fff', lh: 72 }, { text: step.text, font: '40px system-ui', color: '#dde', lh: 54 });
-    lines.push({ text: `${idx + 1} / ${STEPS.steps.length}` + (has ? '   ·   X / S: sources (' + (step.src ?? []).map((k) => srcOf(k).short).join(', ') + ')' : ''), font: '26px system-ui', color: '#667', lh: 34 });
+    lines.push({ text: step.title, font: '600 56px system-ui', color: '#fff', lh: 72 }, { text: step.text, font: '44px system-ui', color: '#dde', lh: 60 });
+    lines.push({ text: `${idx + 1} / ${STEPS.steps.length}` + (has ? '   ·   X / S: sources (' + (step.src ?? []).map((k) => srcOf(k).short).join(', ') + ')' : ''), font: '30px system-ui', color: '#8a93a3', lh: 40 });
   }
   const c = textCanvas(lines);
   panel.material.map?.dispose(); panel.material.map = new THREE.CanvasTexture(c); panel.material.map.colorSpace = THREE.SRGBColorSpace;
   const W = step.panel?.[2] ?? (step.scene ? 1.25 : 0.5);   // bigger in the room, where it floats ~2 m away (steps.json `panel`: [right, up, width])
-  panel.scale.set(W, W * c.height / c.width, 1); panel.material.needsUpdate = true;
+  panel.userData = { W, aspect: c.height / c.width }; panel.scale.set(W, W * c.height / c.width, 1); panel.material.needsUpdate = true;
 }
 const labels = new THREE.Group(); scene.add(labels);
 const LABEL = {
@@ -1569,7 +1655,7 @@ function setInset(kind) {
 
 // ---------- steps
 let idx = 0;
-const ROLE_LIST = ['body', 'face', 'cup', 'cavity', 'airway', 'nose', 'skull', 'brain', 'pathway', 'ethmoid', 'cribriform', 'mouth', 'zoom', 'headset', 'base', 'pipeA', 'pipeB', 'pipeC', 'pipeD', 'pipeM', 'pipeMB', 'pipeL', 'pipeW', 'pipeG', 'pipeH'];
+const ROLE_LIST = ['body', 'face', 'cup', 'cavity', 'airway', 'nose', 'skull', 'brain', 'pathway', 'ethmoid', 'cribriform', 'mouth', 'zoom', 'headset', 'base', 'pipeA', 'pipeB', 'pipeC', 'pipeD', 'pipeM', 'pipeMB', 'pipeL', 'pipeW', 'pipeG', 'pipeH', 'pipeX'];
 // ---------- inside the nose: the olfactory epithelium as a room you stand in (schematic, not to scale)
 // The roof is the epithelium (supporting cells, with the receptor neurons' knobs poking through); cilia
 // hang from each knob into a mucus layer; odorant molecules rise from the air below, dissolve in the
@@ -2105,7 +2191,7 @@ function camTick(dt) {
 function setTargets(step) {
   const show = new Set(step.show), hl = new Set(step.highlight ?? []), dim = new Set(step.dim ?? []);
   // context opacities: the body and skull stay ghostly once we are inside the head
-  const ctx = { body: step.focus === 'body' ? 1 : 0, face: 0.2, cup: 1, cavity: 0.3, airway: 0.55, nose: 0.6, skull: step.focus === 'body' ? 1 : 0.12, brain: 0.16, pathway: 0.9, ethmoid: 0.35, cribriform: 0.9, mouth: 1, zoom: 1, headset: 1, base: 1, pipeA: 1, pipeB: 1, pipeC: 1, pipeD: 1, pipeM: 1, pipeMB: 1, pipeL: 1, pipeW: 1, pipeG: 1, pipeH: 1 };
+  const ctx = { body: step.focus === 'body' ? 1 : 0, face: 0.2, cup: 1, cavity: 0.3, airway: 0.55, nose: 0.6, skull: step.focus === 'body' ? 1 : 0.12, brain: 0.16, pathway: 0.9, ethmoid: 0.35, cribriform: 0.9, mouth: 1, zoom: 1, headset: 1, base: 1, pipeA: 1, pipeB: 1, pipeC: 1, pipeD: 1, pipeM: 1, pipeMB: 1, pipeL: 1, pipeW: 1, pipeG: 1, pipeH: 1, pipeX: 1 };
   if (step.id === 'headset' || step.id.startsWith('pipeline')) Object.assign(ctx, { body: 1, face: 1 });   // the whole man again
   if (PIPE_STYLES.length > 2 && show.delete('pipeC')) show.add('pipe' + PIPE_STYLE);   // ?blocks=A or D: that prototype instead of C
   if (step.cut) Object.assign(ctx, { face: 1, cavity: 1, nose: 1, skull: 1, brain: 1, ethmoid: 0 });   // the cut view is a drawing: a few bones, the brain cut too
@@ -2274,7 +2360,12 @@ function frame(raw, dt, time) {
   const centre = STEPS.steps[idx].scene ? tmp.set(0.55, eyeH - 0.2, -1.4)    // in the room: ahead, lower right
     : tmp.set(0, place.to?.pos ? (STEPS.steps[idx].focus === 'body' ? 1.1 : eyeH - 0.1) : 1.2, -((FOCUS[STEPS.steps[idx].focus] ?? FOCUS.body).dist));
   const po = STEPS.steps[idx].panel ?? [0.5, 0.05];   // steps.json `panel`: [right, up] from the focus, in metres
-  panel.position.set(centre.x + po[0], centre.y + po[1], centre.z + 0.1); panel.lookAt(camPos);
+  // in VR a board far away (steps.json `panelNear`: [right, below your eyes, ahead, width], metres) gets its text
+  // close, low like notes on a lectern: readable at a glance down, and under the board, not over it
+  const near = renderer.xr.isPresenting && STEPS.steps[idx].panelNear, PW = near ? near[3] : panel.userData.W;
+  if (near) panel.position.set(near[0], eyeH - near[1], -near[2]); else panel.position.set(centre.x + po[0], centre.y + po[1], centre.z + 0.1);
+  if (PW) panel.scale.set(PW, PW * panel.userData.aspect, 1);
+  panel.lookAt(camPos);
   panel.visible = faceHold <= 0 && !DIVE.active && !EXIT.active && !OUT.active && (!STEPS.steps[idx].scene || DIVE.done);   // no text in your face during the dive
   // (and none while the opening holds on his face: the panel has no text until the first step is applied)
   labels.visible = !DIVE.active && !EXIT.active && !OUT.active;
@@ -2290,11 +2381,11 @@ function frame(raw, dt, time) {
 }
 
 // Coming from Sequence 1 (enter: 'face'): the first frame is the end of Sequence 1, his face filling
-// the view (eyes 0.14 m ahead, at your eye height, straight on, on black); the first step then glides
+// the view (eyes 0.45 m ahead, at your eye height, straight on, on black); the first step then glides
 // back out from it. In VR your head is first put back at the origin facing -z (the rig), as on this
 // page alone, and the model is placed in front of it; on the desktop the camera is.
-const FACE = 0.14;
-function enterOnFace(xr) {
+const FACE = 0.45;   // as far as Sequence 1 ends from his face (closer felt queasy in the headset)
+function enterOnFace(xr, face) {
   const eyes = new THREE.Box3().setFromObject(meshes.get('(person) low-poly'));   // both eyes, in world
   const E = anat.worldToLocal(eyes.getCenter(new THREE.Vector3()));               // -> anatomy space
   if (xr) {
@@ -2302,8 +2393,12 @@ function enterOnFace(xr) {
     m.decompose(p, q, new THREE.Vector3());   // your head in the room (the pose, before any rig)
     const f = new THREE.Vector3(0, 0, -1).applyQuaternion(q), yaw = Math.atan2(-f.x, -f.z);
     rig.rotation.set(0, -yaw, 0); rig.position.set(-p.x, 0, -p.z).applyAxisAngle(new THREE.Vector3(0, 1, 0), -yaw);
-    rebase(E); spin.quaternion.identity(); stage.scale.setScalar(1);
-    stage.position.set(0, p.y, -FACE).sub(E);   // his eyes straight ahead of yours
+    rig.updateMatrixWorld(true);
+    // his eyes where Sequence 1 left them in your room, facing the same way (else straight ahead of you)
+    const at = face ? rig.localToWorld(face.eyes.clone()) : new THREE.Vector3(0, p.y, -FACE);
+    spin.quaternion.identity(); rebase(E); stage.scale.setScalar(1);
+    if (face) spin.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), face.yaw - yaw);
+    stage.position.copy(at).sub(E);   // the pivot is at E: E lands on `at` however he is turned
     eyeH = p.y || eyeH;
   } else {
     const P = placementFor('body'); rebase(E); spin.quaternion.identity(); stage.scale.setScalar(P.scale);
@@ -2313,13 +2408,12 @@ function enterOnFace(xr) {
     camera.position.set(w.x, w.y, w.z + FACE); camera.rotation.set(0, 0, 0, 'YXZ'); look.yaw = 0; look.pitch = 0;
   }
   // he is already there (the first step's look, without its fades); the pull back waits FACE_HOLD
-  // seconds of frames, so the fade in from black and the first, slow frames (shaders compiling)
-  // do not eat it
+  // seconds of frames, so the first frames, which can be slow, do not eat it
   idx = 0; setTargets(STEPS.steps[0]);
   for (const m of [...role.body, ...role.cup]) m.userData.op = m.userData.target;
   faceHold = FACE_HOLD;
 }
-const FACE_HOLD = 1.2;
+const FACE_HOLD = 0.8;
 let faceHold = 0;
 function faceTick(raw) {
   if (faceHold <= 0) return;
@@ -2330,9 +2424,11 @@ function faceTick(raw) {
 }
 
 // compile every material once now, hidden parts included, so a step that shows new parts for the first
-// time (the pipeline boards: hundreds of meshes) doesn't stall while the GPU compiles their shaders
+// time (the pipeline boards: hundreds of meshes) doesn't stall while the GPU compiles their shaders.
+// Asynchronously: in the one-page talk this runs while Sequence 1 is still on screen (the headset's
+// view must not freeze); this scene is not drawn until load() returns, so the parts can stay shown.
 { const hidden = []; scene.traverse((o) => { if ((o.isMesh || o.isPoints || o.isLine) && !o.visible) { o.visible = true; hidden.push(o); } });
-  try { renderer.compile(scene, camera); } catch (e) { console.warn('precompile:', e); }
+  await renderer.compileAsync(scene, camera).catch((e) => console.warn('precompile:', e));
   for (const o of hidden) o.visible = false; }
 
 return {
@@ -2340,9 +2436,9 @@ return {
   input: { next: () => { if (faceHold <= 0) go(1); }, back: () => { if (faceHold <= 0) go(-1); }, turn: turnModel, info: () => toggleSources() },
   // ?step=N (as the panel counts, 1 = first) or ?step=<id> opens that step directly; &blocks=A|B|C picks
   // the style of the pipeline blocks in the last step
-  start({ enter, xr } = {}) {
+  start({ enter, xr, face } = {}) {
     if (xr) camera.position.set(0, 0, 0);
-    if (enter === 'face') return enterOnFace(!!xr);
+    if (enter === 'face') return enterOnFace(!!xr, face);
     const q = params.get('step');
     if (q) { const n = Number(q); idx = Number.isFinite(n) ? n - 1 : STEPS.steps.findIndex((st) => st.id === q); idx = Math.max(0, Math.min(STEPS.steps.length - 1, idx)); }
     apply(STEPS.steps[idx]);

@@ -11,6 +11,7 @@
 //   street.billboard             -> { mesh, centre, word }
 //   street.setOpacity(0..1)      -> fades everything
 //   street.zNear, street.zFar    -> the road's ends (spawn point at z = 0)
+//   street.light                 -> its sky light (in the group, so it goes when the street is hidden)
 
 // every sign is invented: generic Norwegian shop words, no chain names, logos or colours
 export const SIGNS = [
@@ -124,7 +125,7 @@ export function makeStreet(THREE) {
   add(new THREE.BoxGeometry(0.15, B.y - B.h / 2, 0.15), dark, B.x, (B.y - B.h / 2) / 2, B.z);
   const billboard = { mesh: bb, centre: new THREE.Vector3(B.x, B.y, B.z), word: B.word };
 
-  group.add(new THREE.HemisphereLight(0xf2f6ff, 0x6b6458, 1.6));
+  const light = new THREE.HemisphereLight(0xf2f6ff, 0x6b6458, 1.6); group.add(light);
 
   // fading: materials only become transparent while faded (opaque draws are cheaper)
   let last = 1;
@@ -133,5 +134,5 @@ export function makeStreet(THREE) {
     for (const m of mats) { const t = a < 0.999; if (m.transparent !== t) { m.transparent = t; m.needsUpdate = true; } m.opacity = a; m.depthWrite = !t; }
     group.visible = a > 0.01;
   }
-  return { group, signs, billboard, setOpacity, zNear: Z_NEAR, zFar: Z_FAR };
+  return { group, signs, billboard, setOpacity, light, zNear: Z_NEAR, zFar: Z_FAR };
 }

@@ -85,6 +85,7 @@
   "headset": [
    "Quest 3 hardware: sensors, CPU, GPU, displays",
    "Horizon OS + compositor",
+   "OpenXR: one interface for every app",
    "Quest Browser",
    "WebXR",
    "three.js",
@@ -190,7 +191,7 @@
    ]
   },
   "load": {
-   "note": "Steps pipeline-load and pipeline-site. Grounded 2026-11-17 in the vendored code: GLTFLoader.js:298-301 fetches each file as an arraybuffer, :424-447 parses glTF; three.js draws through a webgl2 context (gl.bufferData) and gets head pose and eye views from WebXR (requestReferenceSpace, XRWebGLBinding). WebXR loads no models. The logo is files/icon.svg of the three.js repo (MIT). The robot (2026-11-17): three.js with arms; load step: the GLTFLoader arm grabs the file blocks, the WebGL arm pushes them into the GPU; frame step: pose from WebXR, update, draw x2 into the GPU, the frame to the displays. Labels are one-line names stuck to their part (2026-11-17): each arm, its claw and its name share a colour, and the names of what is working light up; the explanation is the step text, the sources are behind X / S.",
+   "note": "Steps pipeline-load and pipeline-site. Grounded 2026-11-17 in the vendored code: GLTFLoader.js:298-301 fetches each file as an arraybuffer, :424-447 parses glTF; three.js draws through a webgl2 context (gl.bufferData) and gets head pose and eye views from WebXR (requestReferenceSpace, XRWebGLBinding). WebXR loads no models. The logo is files/icon.svg of the three.js repo (MIT). The robot (2026-11-17): three.js with arms; load step: the GLTFLoader arm grabs the file blocks, the WebGL arm pushes them into the GPU; frame step: pose from WebXR, update, draw x2 into the GPU, the frame to the displays. Labels are one-line names stuck to their part (2026-11-17): each arm, its claw and its name share a colour, and the names of what is working light up; the explanation is the step text, the sources are behind X / S. OpenXR (2026-11-17, Dominic): a slab under the WebXR block (the pose rises through it) and a gate on the conveyor (the frame passes it); step pipeline-openxr shows three apps on one OpenXR bar. Evidence: plans/pipeline.md, 'Under WebXR: OpenXR'. Logos (2026-11-17): logos/webxr.svg is media/logo/webxr-logo.svg of immersive-web/webxr-samples (MIT); logos/openxr.svg is the OpenXR logo from khronos.org/assets/images/api_logos/openxr.svg (OpenXR and its logo are trademarks of The Khronos Group, shown unaltered to name the standard). They replace the WebXR and OpenXR name pills. The displays and lenses sit inside a small see-through copy of the headset (headset.glb), one device at the end of the conveyor; the OpenXR slab and gate are joined by one teal rail, the gate is the headset's door (frames in, poses out), and poses ride the rail up to WebXR. On the OpenXR board three.js lines up with Unity/Unreal (what you write in) and WebXR, inside the browser, with their OpenXR plug-in (what talks to OpenXR); the browser is the program OpenXR actually sees.",
    "bracket": "4 .glb files, about 11 MB",
    "logo": "three.js",
    "site": "Our website · index.html",
@@ -205,8 +206,33 @@
    "xr": "WebXR",
    "draw": "draw × 2",
    "update": "update",
-   "show": "Displays + lenses",
-   "pose": "pose"
+   "show": "Quest 3: displays + lenses",
+   "pose": "pose",
+   "openxr": {
+    "name": "OpenXR",
+    "runtime": "Headset runtime (Horizon OS)",
+    "apps": [
+     [
+      "three.js (our page)",
+      "WebXR, in Quest Browser"
+     ],
+     [
+      "Unity",
+      "OpenXR plug-in"
+     ],
+     [
+      "Unreal Engine",
+      "OpenXR plug-in"
+     ]
+    ],
+    "title": "One road to the headset",
+    "sub": "pose up, frame down: the same calls, whichever engine",
+    "rows": [
+     "you write in",
+     "talks to OpenXR"
+    ],
+    "device": "Quest 3"
+   }
   }
  }
 }
