@@ -6,8 +6,8 @@
 //   setMap(THREE, mesh, canvas, width)   swap a plane's canvas, keep its aspect
 //   ease(t)                              ease-in-out for 0..1
 //   setupVR(THREE, renderer, camera, button, { onStart, onEnd })
-//   makeXRInput(renderer, { next, back, turn, info, move })  -> call every frame with dt: A / right
-//                                           trigger next, B / left trigger back, X info, right stick turns,
+//   makeXRInput(renderer, { next, back, turn, info, move })  -> call every frame with dt: A
+//                                           next, B back (not the triggers: a resting finger stepped on), X info, hold Y leaves VR, right stick turns,
 //                                           left stick walks (move(sideways, forward, dt), -1..1 each)
 
 export function textCanvas(lines, w = 1024, pad = 36) {
@@ -59,8 +59,10 @@ export function makeXRInput(renderer, { next, back, turn, info, move, recentre }
     for (const src of session.inputSources) {
       const gp = src.gamepad; if (!gp) continue; const h = src.handedness;
       const edge = (i, f) => { const k = h + i, p = !!gp.buttons[i]?.pressed; if (p && !prev[k]) f(); prev[k] = p; };
-      if (h === 'right') { edge(4, next); edge(5, back); edge(0, next); }
-      if (h === 'left') { edge(0, back); if (info) edge(4, info); }   // X: the step's sources
+      // A next, B back only: the triggers did it too, and a finger resting on one (or a controller
+      // lying on the desk) kept stepping the talk forward on its own
+      if (h === 'right') { edge(4, next); edge(5, back); }
+      if (h === 'left' && info) edge(4, info);   // X: the step's sources
       // Y held for a second: leave VR. The Quest's own menu offers only Resume for a WebXR page, so
       // without this the only way out was reloading the page from a debugger.
       if (h === 'left') {

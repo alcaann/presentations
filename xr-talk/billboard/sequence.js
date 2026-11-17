@@ -19,7 +19,7 @@ const CSS = `
 `;
 const UI = `<div id="ui"><h1 id="t">loading…</h1><p id="x"></p><p class="q" id="q"></p><p class="src" id="s"></p>
   <button id="prev">◀ back</button><button id="next">next ▶</button>
-  <p class="src">VR: A / right trigger next · B / left trigger back · right stick turns you · left stick walks (first step, epilogue) or floats you around the model, grip returns · desktop: ← → steps, drag looks, ↑ ↓ walk / float, R returns · ?stats for frame rate</p></div>`;
+  <p class="src">VR: A next · B back · right stick turns you · left stick walks (first step, epilogue) or floats you around the model, grip returns · desktop: ← → steps, drag looks, ↑ ↓ walk / float, R returns · ?stats for frame rate</p></div>`;
 
 // A sequence for shared/host.js (the contract is in plans/story.md): load() builds everything and
 // returns the scene, camera and hooks; the page owns the renderer, the VR session and the loop
