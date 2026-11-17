@@ -252,8 +252,7 @@
    "title": "From 3D models to files the headset can draw",
    "text": "Four models went in. The raw files are big and full of things a real-time scene doesn't need, so we kept only the parts we show and made them lighter, ending as four small .glb files.",
    "show": [
-    "pipeM",
-    "pipeMB"
+    "pipeM"
    ],
    "focus": "models",
    "src": [
@@ -414,36 +413,6 @@
     "THREE"
    ],
    "inside": true,
-   "panelNear": [
-    0.35,
-    0.6,
-    1.3,
-    0.55
-   ]
-  },
-  {
-   "id": "pipeline",
-   "title": "From models to your eyes",
-   "text": "Two machines, in layers. The laptop makes the 3D models and serves the files; the headset runs the page: browser, WebXR, three.js. Set up once, linked by adb over the cable or Wi-Fi.",
-   "show": [
-    "body",
-    "headset",
-    "pipeC"
-   ],
-   "focus": "stage",
-   "src": []
-  },
-  {
-   "id": "pipeline-headset",
-   "title": "Inside the headset",
-   "text": "Then the same loop runs every frame, 72 to 120 times a second: the cameras and motion sensor track the head, the CPU updates the scene, the GPU draws it once per eye, and the displays show it through the lenses. Your head moves, and it starts again.",
-   "show": [
-    "body",
-    "headset",
-    "pipeB"
-   ],
-   "focus": "stage",
-   "src": [],
    "panelNear": [
     0.35,
     0.6,

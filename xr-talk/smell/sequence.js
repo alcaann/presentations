@@ -1475,7 +1475,7 @@ function streamTick(dt, time) {
   streamGeo.attributes.position.needsUpdate = true; streamGeo.attributes.color.needsUpdate = true;
 }
 
-window.smell = { THREE, meshes, role, A, scene, anat, camera, stage, get shotFor() { return shotFor; }, get STEPS() { return STEPS; }, get placementFor() { return placementFor; }, get DIVE_T() { return DIVE_T; }, get DIVE() { return DIVE; }, get V0() { return V0; }, get look() { return look; }, get EXIT() { return EXIT; }, get OUT() { return OUT; }, get place() { return place; } };   // for poking at it from the console
+window.smell = { THREE, meshes, role, A, scene, anat, camera, stage, get shotFor() { return shotFor; }, get STEPS() { return STEPS; }, get placementFor() { return placementFor; }, get DIVE_T() { return DIVE_T; }, get DIVE() { return DIVE; }, get V0() { return V0; }, get look() { return look; }, get EXIT() { return EXIT; }, get OUT() { return OUT; }, get place() { return place; }, get micro() { return micro_; } };   // for poking at it from the console
 
 // ---------- placement per focus: which anatomy point sits where in front of the viewer
 const FOCUS = {
@@ -1957,7 +1957,9 @@ function diveTick() {
   if ((DIVE.dir > 0 && DIVE.T >= TT) || (DIVE.dir < 0 && DIVE.T <= 0)) diveFinish();
 }
 function diveCancel() {                              // jumping elsewhere mid-dive
-  DIVE.active = false; DIVE.done = true; headlamp.intensity = 0;
+  // the room goes too: whatever comes next turns it back on if it wants it (fast presses back from the
+  // pipeline left it showing over the man, 2026-11-17)
+  DIVE.active = false; DIVE.done = true; headlamp.intensity = 0; micro_.target = 0; scene.fog = null;
 }
 // back into the room from the next step: the reverse of leaving it, a straight zoom down onto the roof
 function roomEntry(prev) {
@@ -2116,7 +2118,7 @@ function outTick() {
 let lastOnce = '';
 function setTargetsOnce(id) { if (lastOnce !== id + OUT.phase) { lastOnce = id + OUT.phase; setTargets(stepById(id)); } }
 function outCancel() { OUT.active = false; cutState.driven = false; headlamp.intensity = 0; place.mode = 'glide'; }
-function exitCancel() { EXIT.active = false; cutState.driven = false; headlamp.intensity = 0; place.mode = 'glide'; }
+function exitCancel() { EXIT.active = false; cutState.driven = false; headlamp.intensity = 0; place.mode = 'glide'; micro_.target = 0; scene.fog = null; }
 const pose = (pos, yaw, pitch) => ({ pos: pos.clone(), yaw, pitch });
 const poseLook = (pos, at) => { const v = at.clone().sub(pos); return pose(pos, Math.atan2(-v.x, -v.z), Math.atan2(v.y, Math.hypot(v.x, v.z))); };
 const curPose = () => pose(camera.position, look.yaw, look.pitch);
@@ -2246,6 +2248,7 @@ function apply(step, prev = null) {
   const crossing = !!step.inside !== !!from?.inside, before = crossing ? new Map([...meshes.values()].map((m) => [m, m.userData.target])) : null;
   setTargets(step);
   if (from?.scene) { micro_.target = 0; headlamp.intensity = 0; scene.fog = null; }
+  if (!step.scene) { micro_.target = 0; scene.fog = null; }   // an ordinary glide never shows the room
   // Move the turning pivot to the new focus point without a jump, then glide: position, a zoom that
   // grows by a constant factor per second, and the turn.
   const F = FOCUS[step.focus] ?? FOCUS.body;
@@ -2432,6 +2435,8 @@ function faceTick(raw) {
   for (const o of hidden) o.visible = false; }
 
 return {
+  // for the spectator view (../shared/host.js): which step, and a jump to one when it has drifted
+  step: () => idx, jump: (i) => { const prev = idx; idx = i; apply(STEPS.steps[i], prev); },
   scene, camera, frame, ui: root,
   input: { next: () => { if (faceHold <= 0) go(1); }, back: () => { if (faceHold <= 0) go(-1); }, turn: turnModel, info: () => toggleSources() },
   // ?step=N (as the panel counts, 1 = first) or ?step=<id> opens that step directly; &blocks=A|B|C picks

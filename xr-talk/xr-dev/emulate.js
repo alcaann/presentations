@@ -17,7 +17,7 @@ const q = new URLSearchParams(location.search);
 const xrDevice = new XRDevice(metaQuest3);
 // Chrome on a desktop already has a (headset-less) navigator.xr; replace it
 xrDevice.installRuntime({ forceInstall: true });
-if (!q.has('noui')) {
+if (!q.has('noui') && !q.has('spectator')) {   // the spectator view (../shared/host.js) shows no overlay
   const { DevUI } = await import('./vendor/iwer-devui.module.min.js');
   xrDevice.installDevUI(DevUI);
 }

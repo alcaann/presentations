@@ -633,6 +633,8 @@ function frame(raw, dt, time) {
 const desk = camera.position.clone();
 return {
   scene, camera, frame, check, ui: root,
+  // for the spectator view (../shared/host.js): which step, and a jump to one when it has drifted
+  step: () => idx, jump: (i) => { const how = i > idx ? 'next' : 'back'; idx = i; apply(STEPS.steps[i], how); },
   input: { next: () => go(1), back: () => go(-1), info: toggleSources, move, turn: stickTurn, recentre },
   start() { apply(STEPS.steps[0]); },
   // in the headset camera.position is the head pose; going in part-way jumps to the step's view, from your real head
