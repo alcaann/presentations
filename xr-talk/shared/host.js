@@ -150,7 +150,9 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
   // ---------- VR
   const vr = $('vr');
   if (navigator.xr && await navigator.xr.isSessionSupported('immersive-vr').catch(() => false)) {
-    vr.disabled = false;
+    // enabled once the first sequence is built (below): entering before that gave a black session
+    // on the goggles while the models were still downloading
+    vr.textContent = 'Loading…';
     vr.onclick = async () => renderer.xr.setSession(await navigator.xr.requestSession('immersive-vr', { optionalFeatures: ['local-floor'] }));
   } else vr.textContent = 'VR not available';
   renderer.xr.addEventListener('sessionstart', () => {
@@ -339,6 +341,7 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
   let frames = 0, fpsT = 0;
   // ?enter=face: open the first sequence as if coming from the one before (to work on that opening)
   await start(startAt, { enter: params.get('enter') ?? undefined });
+  if (vr.onclick) { vr.disabled = false; vr.textContent = 'Enter VR'; }
   if (SEQS[at].intro && at + 1 < SEQS.length) load(at + 1).catch(() => {});   // behind the title screen, so the way in does not wait
   // the ring is drawn for the first time mid-transition: compile and upload it now, so that first frame
   // is not a white square
