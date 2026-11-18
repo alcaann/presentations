@@ -219,7 +219,9 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
     if (!SPECTATOR) return () => {};
     const xd = window.xrDevice, cv = renderer.domElement;
     xd.stereoEnabled = false;                                   // one view over the whole canvas
-    xd.fovy = (Number(params.get('fov')) || 70) * Math.PI / 180; // vertical field of view
+    const baseFov = Number(params.get('fov')) || 70, view = { fov: baseFov, tilt: 0 };   // vertical field of view, degrees
+    const tiltQ = new THREE.Quaternion(), outQ = new THREE.Quaternion(), X_AXIS = V(1, 0, 0);
+    xd.fovy = baseFov * Math.PI / 180;
     const style = document.createElement('style');
     style.textContent = 'body.spec-follow #seq-ui, body.spec #vr, body.spec-follow #proceed { display: none !important; }'
       + ' body.spec { background: #000; } body.spec-follow:not(.spec-mouse) { cursor: none; }'
@@ -322,7 +324,14 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
       if (!following || !renderer.xr.isPresenting) return;
       const k = 1 - Math.exp(-real * (Number(params.get('smooth')) || 5));   // higher = follows faster
       sp.lerp(tp, k); sq.slerp(tq, k);
-      xd.position.set(sp.x, sp.y, sp.z); xd.quaternion.set(sq.x, sq.y, sq.z, sq.w);
+      // a step whose scene is taller than the spectator's 70° (the goggles see ~96°) asks for a wider view,
+      // lowered a little: you read its lower part with your eyes, not your head (steps.json `spectator`:
+      // { fov, tilt } in degrees, tilt down). Eased in and out over about a second.
+      const want = active?.specView?.() ?? {}, ke = 1 - Math.exp(-real * 3);
+      view.fov += ((want.fov ?? baseFov) - view.fov) * ke; view.tilt += ((want.tilt ?? 0) - view.tilt) * ke;
+      xd.fovy = view.fov * Math.PI / 180;
+      tiltQ.setFromAxisAngle(X_AXIS, -view.tilt * Math.PI / 180); outQ.copy(sq).multiply(tiltQ);
+      xd.position.set(sp.x, sp.y, sp.z); xd.quaternion.set(outQ.x, outQ.y, outQ.z, outQ.w);
       // a press lost on the way: if the step differs for a while, jump to the headset's step;
       // if the sequence differs, reopen at the headset's sequence
       if (!last || busy || popup || last.busy || last.popup) { drift = away = 0; return; }

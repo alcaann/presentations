@@ -188,7 +188,11 @@
    },
    "quotes": [
     "through an olfactory foramen in the cribriform plate of the ethmoid bone"
-   ]
+   ],
+   "spectator": {
+    "fov": 92,
+    "tilt": 12
+   }
   },
   {
    "id": "bulb",
@@ -222,7 +226,11 @@
    },
    "quotes": [
     "each glomerulus receives signals from one type of olfactory receptor"
-   ]
+   ],
+   "spectator": {
+    "fov": 85,
+    "tilt": 8
+   }
   },
   {
    "id": "headset",

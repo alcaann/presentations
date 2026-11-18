@@ -2438,6 +2438,7 @@ function faceTick(raw) {
 return {
   // for the spectator view (../shared/host.js): which step, and a jump to one when it has drifted
   step: () => idx, jump: (i) => { const prev = idx; idx = i; apply(STEPS.steps[i], prev); },
+  specView: () => STEPS.steps[idx]?.spectator,   // steps.json `spectator`: a wider/lower spectator view for this step
   scene, camera, frame, ui: root,
   input: { next: () => { if (faceHold <= 0) go(1); }, back: () => { if (faceHold <= 0) go(-1); }, turn: turnModel, info: () => toggleSources() },
   // ?step=N (as the panel counts, 1 = first) or ?step=<id> opens that step directly; &blocks=A|B|C picks
