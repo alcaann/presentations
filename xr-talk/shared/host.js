@@ -130,13 +130,15 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
   const navRaw = (d) => { if (popup) answer(d > 0); else toRaw(d > 0 ? 'next' : 'back', []); };
   const outbox = [];   // presses for the spectator (?spectate)
   const rec = (e) => { if (SPECTATE) outbox.push(e); };
-  const to = (name) => (...a) => { if (SPECTATOR) return; rec({ k: name, a }); toRaw(name, a); };
-  const nav = (d) => { if (SPECTATOR) return; rec({ k: 'nav', d }); navRaw(d); };
+  // the spectator ignores its own keys while it copies the goggles; taken over (G), it is a normal page
+  let following = false;
+  const to = (name) => (...a) => { if (following) return; rec({ k: name, a }); toRaw(name, a); };
+  const nav = (d) => { if (following) return; rec({ k: 'nav', d }); navRaw(d); };
   const xrInput = makeXRInput(renderer, { next: () => nav(1), back: () => nav(-1), info: to('info'), move: to('move'), turn: to('turn'), recentre: to('recentre') });
   // the rehearsal page (presentation/tools/rehearse.py --talk) steps the talk on its stage with ← →
   if (params.has('rehearse')) addEventListener('message', (e) => { if (e.data?.talkNav) nav(e.data.talkNav); });
   addEventListener('keydown', (e) => {
-    if (SPECTATOR) return;
+    if (following || e.target.closest?.('input')) return;
     if (['ArrowRight', ' ', 'PageDown'].includes(e.key)) nav(1);
     if (['ArrowLeft', 'PageUp'].includes(e.key)) nav(-1);
   });
@@ -201,32 +203,86 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
       if (setBadge && !!msg.pose !== live) { live = !!msg.pose; setBadge(live ? 'live' : 'linked', live ? 'sending to the laptop' : 'laptop linked'); }
     };
   })();
-  const follow = await (async () => {
+  // The follower. It never blocks the page: the talk loads at once (seen behind the waiting card), and the
+  // emulated session starts on the goggles' first pose. G, or the button bottom right, takes over: the
+  // laptop stops copying the goggles, leaves the emulated session, puts the current step back at its own
+  // desktop view and steps with the arrow keys like the normal page. G again follows the goggles, which
+  // brings the laptop back to their step. For when the goggles die mid-talk.
+  let pageReady = false, specKick = () => {};
+  const follow = (() => {
     if (!SPECTATOR) return () => {};
-    const xd = window.xrDevice;
+    const xd = window.xrDevice, cv = renderer.domElement;
     xd.stereoEnabled = false;                                   // one view over the whole canvas
     xd.fovy = (Number(params.get('fov')) || 70) * Math.PI / 180; // vertical field of view
     const style = document.createElement('style');
-    style.textContent = '#seq-ui, #vr, #proceed { display: none !important; } body { cursor: none; background: #000; }'
-      + ' #spec-wait { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; color: #8b93a1; font: 18px system-ui; }';
+    style.textContent = 'body.spec-follow #seq-ui, body.spec #vr, body.spec-follow #proceed { display: none !important; }'
+      + ' body.spec { background: #000; } body.spec-follow:not(.spec-mouse) { cursor: none; }'
+      + ' #spec-wait { position: fixed; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.88); color: #8b93a1; font: 18px system-ui; }'
+      + ' #spec-toggle { position: fixed; right: 12px; bottom: 12px; z-index: 2147483647; font: 600 14px system-ui; padding: 8px 14px; border-radius: 999px;'
+      + ' border: 0; background: rgba(12,16,24,0.85); color: #dde3ea; cursor: pointer; opacity: 0; transition: opacity .3s; }'
+      + ' body.spec-mouse #spec-toggle, body.spec:not(.spec-follow) #spec-toggle { opacity: 1; }';
     document.head.append(style);
+    document.body.classList.add('spec');
     const wait = document.createElement('div'); wait.id = 'spec-wait'; wait.textContent = 'Spectator: waiting for the headset (open the talk on it and Enter VR)…';
-    document.body.append(wait);
+    const btn = document.createElement('button'); btn.id = 'spec-toggle';
+    document.body.append(wait, btn);
+    let mouseT = null;   // the button and the cursor show while the mouse moves, so they stay off the shared screen
+    addEventListener('mousemove', () => { document.body.classList.add('spec-mouse'); clearTimeout(mouseT); mouseT = setTimeout(() => document.body.classList.remove('spec-mouse'), 2500); });
+
     const peer = parsePeer(params.get('spectator'));
-    let spec = params.get('spectator') ?? '', setBadge = null, live = false, poseAt = 0;
+    let spec = params.get('spectator') ?? '', setBadge = () => {}, live = false, poseAt = 0, entering = false;
     const tp = V(0, 1.6, 0), tq = new THREE.Quaternion(), sp = V(0, 1.6, 0), sq = new THREE.Quaternion(), e = new THREE.Euler();
     let last = null, have = false, drift = 0, away = 0;
     const onMsg = (m) => {
       last = m;
-      for (const x of m.events ?? []) { if (x.k === 'nav') navRaw(x.d); else toRaw(x.k, x.a ?? []); }
+      if (following) for (const x of m.events ?? []) { if (x.k === 'nav') navRaw(x.d); else toRaw(x.k, x.a ?? []); }
       if (m.pose) {
         tp.fromArray(m.pose.p); e.setFromQuaternion(tq.fromArray(m.pose.q), 'YXZ'); e.z = 0; tq.setFromEuler(e);   // no roll
-        if (!have) { sp.copy(tp); sq.copy(tq); have = true; }
-        poseAt = performance.now();
-        if (setBadge && !live) { live = true; setBadge('live', 'goggles in VR'); }
+        have = true; poseAt = performance.now();
+        if (!live) { live = true; setBadge('live', 'goggles in VR'); }
+        if (following && !renderer.xr.isPresenting) enter();
       }
     };
-    if (peer) {
+
+    // the emulated session, at the goggles' current pose; then a fixed 16:9 canvas. The emulator (IWER) sizes
+    // the canvas to the window when the session starts and three.js keeps that size, so a preview that later
+    // went fullscreen showed it small in the middle; the loop holds specSize and CSS fits it to the page.
+    async function enter() {
+      if (entering || !pageReady || renderer.xr.isPresenting) return;
+      entering = true;
+      sp.copy(tp); sq.copy(tq); xd.position.set(sp.x, sp.y, sp.z); xd.quaternion.set(sq.x, sq.y, sq.z, sq.w);
+      try {
+        await vr.onclick?.();
+        await new Promise((r) => (renderer.xr.isPresenting ? r() : renderer.xr.addEventListener('sessionstart', r, { once: true })));
+      } finally { entering = false; }
+      if (!following) return leave();   // taken over while it was starting
+      wait.style.display = 'none';
+      const W = Math.min(3840, Math.max(1920, Math.round(screen.width * devicePixelRatio)));
+      specSize = [W, Math.round(W * 9 / 16)];
+      Object.assign(cv.style, { width: '100%', height: '100%' });
+      document.body.style.overflow = 'hidden';
+    }
+    async function leave() {
+      specSize = null;
+      const ses = renderer.xr.getSession();
+      if (ses) await new Promise((r) => { renderer.xr.addEventListener('sessionend', r, { once: true }); ses.end().catch(r); });
+      Object.assign(cv.style, { width: '', height: '' }); resize();
+      // the step again, now on the desktop: its own camera view, not wherever the head was
+      if (!busy && active?.jump && active.step) active.jump(active.step());
+    }
+    function setMode(f) {
+      following = f; drift = away = 0;
+      document.body.classList.toggle('spec-follow', f);
+      btn.textContent = f ? 'Following the goggles · G: take over' : 'Laptop in control (← →) · G: follow the goggles';
+      if (f) { if (have && performance.now() - poseAt < 2000) enter(); else wait.style.display = ''; }
+      else { wait.style.display = 'none'; leave(); }
+    }
+    addEventListener('keydown', (ev) => { if ((ev.key === 'g' || ev.key === 'G') && !ev.target.closest?.('input')) setMode(!following); });
+    btn.onclick = () => setMode(!following);
+    setMode(true);
+    specKick = () => { if (following && have && performance.now() - poseAt < 2000) enter(); };
+
+    if (peer) (async () => {
       // the laptop dials the goggles' code: from the URL, else typed here (the box remembers the last one);
       // then written into the URL, so a reload (or the drift reload below) dials it again by itself
       let code = peer.code;
@@ -236,32 +292,30 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
           + `<input autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="16" value="${prev.replace(/[^a-z0-9]/g, '')}" `
           + 'style="font:600 56px ui-monospace,monospace;width:6.5em;text-align:center;letter-spacing:.12em;padding:4px 10px;border-radius:12px;border:1px solid #3a4250;background:#171a21;color:#fff">'
           + '<br><button style="font:600 18px system-ui;padding:8px 18px;border-radius:8px;border:0;background:#2d6cdf;color:#fff;cursor:pointer">Connect</button></form>';
-        wait.style.cursor = 'auto'; document.body.style.cursor = 'auto';
+        wait.style.cursor = 'auto';
         const f = wait.querySelector('form'), inp = f.querySelector('input'); inp.focus(); inp.select();
         code = await new Promise((res) => { f.onsubmit = (ev) => { ev.preventDefault(); const c = inp.value.trim().toLowerCase().replace(/[^a-z0-9]/g, ''); if (c) res(c); else inp.focus(); }; });
-        document.body.style.cursor = '';
       }
       try { localStorage.setItem('xrtalk-join', code); } catch {}
       spec = `peer:${code}`;
       const u = new URL(location.href); u.searchParams.set('spectator', spec); history.replaceState(null, '', u);
-      wait.innerHTML = `Spectator: calling the goggles (code <b style="color:#e8edf3">${code}</b>), then waiting for them to Enter VR…`;
+      wait.innerHTML = `Spectator: calling the goggles (code <b style="color:#e8edf3">${code}</b>), then waiting for them to Enter VR… · G: present from the laptop`;
       setBadge = params.get('badge') === '0' ? () => {} : badge('top-right');
       peerJoin({ code, other: 'goggles', onData: onMsg, onStatus: (st, t, d) => { live = false; setBadge(st, t, d); } });
-    } else {
+    })();
+    else {
       const es = new EventSource(spec.replace(/\/$/, '') + '/spectate/events');
       es.onmessage = (ev) => onMsg(JSON.parse(ev.data));
     }
-    // wait for the headset's first pose, so the emulated head starts where the real one is
-    await new Promise((res) => { const id = setInterval(() => { if (have) { clearInterval(id); res(); } }, 100); });
-    wait.remove();
-    xd.position.set(sp.x, sp.y, sp.z); xd.quaternion.set(sq.x, sq.y, sq.z, sq.w);
+
     return (real) => {
+      if (live && performance.now() - poseAt > 2000) { live = false; setBadge('linked', following ? 'goggles linked, not in VR · G: take over' : 'goggles linked, not in VR'); }
+      if (!following || !renderer.xr.isPresenting) return;
       const k = 1 - Math.exp(-real * (Number(params.get('smooth')) || 5));   // higher = follows faster
       sp.lerp(tp, k); sq.slerp(tq, k);
       xd.position.set(sp.x, sp.y, sp.z); xd.quaternion.set(sq.x, sq.y, sq.z, sq.w);
       // a press lost on the way: if the step differs for a while, jump to the headset's step;
       // if the sequence differs, reopen at the headset's sequence
-      if (live && performance.now() - poseAt > 2000) { live = false; setBadge('linked', 'goggles linked, not in VR'); }
       if (!last || busy || popup || last.busy || last.popup) { drift = away = 0; return; }
       if (last.seq !== at) { away += real; if (away > 3) location.search = `?spectator=${encodeURIComponent(spec)}&seq=${last.seq + 1}`; return; }
       away = 0;
@@ -287,24 +341,13 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
   renderer.setAnimationLoop(() => {
     const real = Math.min(clock.getDelta(), 0.5), raw = real * speed, dt = Math.min(raw, 0.05), time = clock.elapsedTime;
     if (!SPECTATOR) xrInput(dt);
-    else if (specSize) { const c = renderer.domElement; if (c.width !== specSize[0] || c.height !== specSize[1]) { c.width = specSize[0]; c.height = specSize[1]; } }
+    else if (specSize && renderer.xr.isPresenting) { const c = renderer.domElement; if (c.width !== specSize[0] || c.height !== specSize[1]) { c.width = specSize[0]; c.height = specSize[1]; } }
     follow(real); spectate(time);
     active.frame(raw, dt, time);
     if (spinner.visible) spinner.rotation.z -= real * 5;
     renderer.render(active.scene, active.camera);
     if (stats) { frames++; fpsT += real; if (fpsT > 1) { stats.textContent = `${(frames / fpsT).toFixed(0)} fps · ${renderer.info.render.calls} draw calls · ${(renderer.info.render.triangles / 1000).toFixed(0)}k tris`; frames = 0; fpsT = 0; } }
   });
-  // the spectator enters its emulated VR session by itself, at the headset's pose
-  if (SPECTATOR) {
-    // The emulator (IWER) sizes the canvas to the window when the session starts and three.js then keeps
-    // that size, so a preview that later goes fullscreen showed it small in the middle, or blurred when
-    // stretched. After the start, draw at a fixed 16:9 size (at least 1080p, or the screen's) and let CSS
-    // fit it to whatever the page is.
-    await vr.onclick?.();
-    await new Promise((r) => (renderer.xr.isPresenting ? r() : renderer.xr.addEventListener('sessionstart', r, { once: true })));
-    const W = Math.min(3840, Math.max(1920, Math.round(screen.width * devicePixelRatio))), H = Math.round(W * 9 / 16), cv = renderer.domElement;
-    specSize = [W, H];   // applied in the loop: the emulator sets it back after the start
-    Object.assign(cv.style, { width: '100%', height: '100%' });
-    document.body.style.overflow = 'hidden';
-  }
+  // the spectator enters its emulated session once the talk is loaded and the goggles' pose is in
+  pageReady = true; specKick();
 }
