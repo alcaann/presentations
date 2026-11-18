@@ -6,7 +6,7 @@
 <p>TDT16 (XR), our WebXR talk. On a Quest 3, open it in the Quest Browser and press <b>Enter VR</b>.
 On a computer, use the arrow keys (add <code>?emulate</code> for an emulated headset).</p>
 <ul>
-<li><a href="story/">The whole talk</a>: the billboard, then the coffee</li>
+<li><a href="story/">The whole talk</a>: the title screen, the billboard, then the coffee</li>
 <li><a href="smell/">Smell only</a>, or <a href="smell/?step=pipeline-models">from the rendering pipeline</a></li>
 <li><a href="billboard/">The billboard only</a></li>
 </ul>
@@ -18,7 +18,7 @@ over WebRTC (PeerJS only introduces them). Both need internet for the first hand
 <li><b>Goggles</b>: open the talk here, it shows a code (the same one every time on these goggles), then Enter VR.
 <form id="vr-go" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0">
 <select id="seq" style="font:16px system-ui;padding:8px;border-radius:8px;background:#171a21;color:#fff;border:1px solid #3a4250">
-<option value="1">from the billboard</option><option value="2">from the coffee</option></select>
+<option value="0">from the title screen</option><option value="1">from the billboard</option><option value="2" selected>from the coffee</option></select>
 <button style="font:600 16px system-ui;padding:8px 14px;border-radius:8px;border:0;background:#2d6cdf;color:#fff">Open the talk on the goggles</button>
 </form></li>
 <li><b>Laptop</b>: type that code and share the window that opens. The dot in the corner turns green on both.

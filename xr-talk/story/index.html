@@ -4,7 +4,7 @@
 <title>Seeing and smelling</title>
 <link rel="stylesheet" href="../shared/host.css">
 <script type="importmap">
-{ "imports": { "three": "../smell/vendor/three-0.180.0.module.min.js", "three/addons/": "../smell/vendor/addons/" } }
+{ "imports": { "three": "../shared/vendor/three-0.180.0.module.min.js", "three/addons/": "../shared/vendor/addons/" } }
 </script>
 </head>
 <body>
@@ -18,9 +18,11 @@
 import { runStory } from '../shared/host.js';
 const seq = new URLSearchParams(location.search).get('seq');
 await runStory([
+  // the title screen: a television running both sequences; Next goes into it, into Sequence 1
+  { title: 'Brain Experiences', module: '../title/sequence.js', intro: true },
   { title: 'Sequence 1: The Sign', module: '../billboard/sequence.js' },
   // Sequence 3 (the presentation) runs on inside it
   { title: 'Sequence 2: Coffee', module: '../smell/sequence.js', fallback: '../smell/' },
-], { startAt: seq ? Number(seq) - 1 : 0 });
+], { startAt: seq ? Number(seq) : 0 });   // ?seq=1: straight to Sequence 1, past the title
 </script>
 </body></html>

@@ -10,7 +10,10 @@
 // raw: real seconds since the last frame (camera moves, fades), dt: the same capped at 0.05 s
 // (sticks). Sequences call host.end() when Next is pressed on their last step.
 //
-//   runStory([{ title, module, fallback }], { startAt })   module: path from the page
+//   runStory([{ title, module, fallback, intro }], { startAt })   module: path from the page
+//
+// intro: a title screen (title/sequence.js). It asks no question: Next plays its exit() (the way in)
+// and the next sequence opens as it does on its own, not on his face.
 //
 // A sequence that cannot be loaded as a module yet (fallback: its own page) is opened as a page
 // instead: the VR session ends there and Enter VR has to be pressed again.
@@ -89,6 +92,7 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
   // ---------- between sequences: Proceed? (in front of you in the scene; also as buttons on the desktop)
   function ended(i) {
     if (busy || popup || i !== at || i + 1 >= SEQS.length) return;
+    if (SEQS[i].intro) { transition(i); return; }
     const cam = active.camera, k = cam.getWorldScale(V()).x, p = cam.getWorldPosition(V()), f = cam.getWorldDirection(V());
     f.y = 0; f.normalize();
     const c = textCanvas([
@@ -121,7 +125,7 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
       location.href = new URL(SEQS[i + 1].fallback, location.href).href; return;
     }
     clearTimeout(slow);
-    await start(i + 1, { enter: 'face', face });
+    await start(i + 1, face ? { enter: 'face', face } : {});
     busy = false;
   }
 
@@ -317,7 +321,7 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
       // a press lost on the way: if the step differs for a while, jump to the headset's step;
       // if the sequence differs, reopen at the headset's sequence
       if (!last || busy || popup || last.busy || last.popup) { drift = away = 0; return; }
-      if (last.seq !== at) { away += real; if (away > 3) location.search = `?spectator=${encodeURIComponent(spec)}&seq=${last.seq + 1}`; return; }
+      if (last.seq !== at) { away += real; if (away > 3) location.search = `?spectator=${encodeURIComponent(spec)}&seq=${last.seq}`; return; }
       away = 0;
       if (last.step != null && active?.step && last.step !== active.step()) { drift += real; if (drift > 1.5) { active.jump(last.step); drift = 0; } } else drift = 0;
     };
@@ -335,6 +339,7 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
   let frames = 0, fpsT = 0;
   // ?enter=face: open the first sequence as if coming from the one before (to work on that opening)
   await start(startAt, { enter: params.get('enter') ?? undefined });
+  if (SEQS[at].intro && at + 1 < SEQS.length) load(at + 1).catch(() => {});   // behind the title screen, so the way in does not wait
   // the ring is drawn for the first time mid-transition: compile and upload it now, so that first frame
   // is not a white square
   spinner.visible = true; renderer.compile(active.scene, active.camera); renderer.initTexture(spinner.material.map); spinner.visible = false;

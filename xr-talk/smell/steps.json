@@ -35,7 +35,7 @@
   },
   "THREE": {
    "short": "three.js r180 (MIT)",
-   "full": "three.js r180 (MIT), vendored in smell/vendor/; GLTFLoader: examples/jsm/loaders/GLTFLoader.js. https://threejs.org/docs/"
+   "full": "three.js r180 (MIT), vendored in shared/vendor/; GLTFLoader: examples/jsm/loaders/GLTFLoader.js. https://threejs.org/docs/"
   },
   "WEBGL": {
    "short": "Khronos WebGL 2.0",

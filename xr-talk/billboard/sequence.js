@@ -16,10 +16,13 @@ const CSS = `
   #ui h1 { font-size: 15px; margin: 0 0 4px; } #ui p { margin: 4px 0; }
   #ui .q { color: #9ab; font-style: italic; } #ui .src { color: #889; font-size: 12px; }
   #ui button { font: inherit; margin: 6px 4px 0 0; padding: 3px 10px; background: #333; color: #ddd; border: 1px solid #555; border-radius: 5px; cursor: pointer; }
+  #ui:not(.open) .more { display: none; }   /* compact by default (as in ../smell/): the 3D panel already shows the text */
+  #ui h1 { display: inline; margin-right: 8px; } #ui .row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  #ui .row button { margin: 0; } #ui #more { background: none; border-color: #444; color: #99a; }
 `;
-const UI = `<div id="ui"><h1 id="t">loading…</h1><p id="x"></p><p class="q" id="q"></p><p class="src" id="s"></p>
-  <button id="prev">◀ back</button><button id="next">next ▶</button>
-  <p class="src">VR: A next · B back · right stick turns you · left stick walks (first step, epilogue) or floats you around the model, grip returns · desktop: ← → steps, drag looks, ↑ ↓ walk / float, R returns · ?stats for frame rate</p></div>`;
+const UI = `<div id="ui"><div class="row"><h1 id="t">loading…</h1><button id="prev">◀</button><button id="next">▶</button><button id="more" title="text, sources and controls (T)">text ▾</button></div>
+  <div class="more"><p id="x"></p><p class="q" id="q"></p><p class="src" id="s"></p>
+  <p class="src">VR: A next · B back · hold Y: leave VR · right stick turns you · left stick walks (first step, epilogue) or floats you around the model, grip returns · desktop: ← → steps, drag looks, ↑ ↓ walk / float, R returns · T text · S sources · ?stats for frame rate</p></div></div>`;
 
 // A sequence for shared/host.js (the contract is in plans/story.md): load() builds everything and
 // returns the scene, camera and hooks; the page owns the renderer, the VR session and the loop
@@ -176,7 +179,9 @@ const vent = A.v1_l.clone().lerp(A.it_l, 0.5), mean = A.amygdala_l.clone().lerp(
 const radMid = A.lgn_l.clone().lerp(A.v1_l, 0.5);
 const V1VIEW = () => ({ pos: at(radMid, 0.09, 0.025, 0), look: W(A.lgn_l.clone().lerp(A.v1_l, 0.7)), s: 1 / 7 });
 const SIDE = () => ({ pos: at(vent, 0.2, 0.02, 0), look: W(vent.clone().add(V(0, -0.015, 0))), s: 1 / 3.2 });
-const OVER = () => ({ pos: at(A.head, 0, 0.075, -0.175), look: W(A.head.clone().add(V(0, -0.005, 0.03))), s: 1 / 3.2 });
+// behind, above and to his left: over V1 (which straight from behind hides the rest) onto the left
+// hemisphere's underside, where the word and meaning areas are
+const OVER = () => ({ pos: at(A.head, 0.09, 0.12, -0.13), look: W(A.head.clone().add(V(0, -0.01, 0.03))), s: 1 / 3.2 });
 const BB = () => street.billboard.centre.clone();
 const shoulder = () => at(A.head, -0.3, 0.12, -0.6);   // over his right shoulder, looking where he looks
 // the signal's route inside the head, eye to V1, each point with what you face there
@@ -207,7 +212,10 @@ const SHOTS = {
     // back out over his shoulder, then round to his right side and in on the right eye
     { pos: shoulder(), look: BB(), s: 1, dur: 3 },
     { pos: at(A.eye_r, -0.45, 0.03, 0.08), look: W(A.eye_r), s: 0.6, dur: 3, person: 0.15, street: 0.22 },
-    { pos: at(A.eye_r, -0.095, 0, 0), look: W(A.eye_r), s: 1 / 6, dur: 2.5 },
+    // in the headset close in on the eye; on a flat screen stop further out, so the whole of his head
+    // stays in the frame instead of a slice of his cheek across it
+    renderer.xr.isPresenting ? { pos: at(A.eye_r, -0.095, 0, 0), look: W(A.eye_r), s: 1 / 6, dur: 2.5 }
+      : { pos: at(A.eye_r, -0.26, 0.02, 0.05), look: W(A.eye_r), s: 1 / 3, dur: 2.5 },
   ],
   nerve: () => {
     const r = ROUTE();
@@ -316,6 +324,7 @@ function runShot(raw) {
 const PANEL_W = 0.52;
 // the panel draws above the part labels (12) so a label can never hide its text
 const panel = canvasPlane(THREE, null, PANEL_W, 13); rig.add(panel);
+if (host.params.has('still')) panel.layers.set(31);   // ?still: no text panel (stills for the title screen, ../title/tv/)
 let showSources = false;
 function setPanel(step) {
   let lines;
@@ -503,7 +512,11 @@ function apply(step, how) {
 }
 function go(d) { if (idx + d >= STEPS.steps.length) { host.end(); return; } const j = Math.max(0, idx + d); if (j === idx) return; idx = j; apply(STEPS.steps[idx], d > 0 ? 'next' : 'back'); }
 $('next').onclick = () => go(1); $('prev').onclick = () => go(-1);
-addEventListener('keydown', (e) => { if (e.key === 's') toggleSources(); }, { signal });   // ← → are routed by the page
+// the text, sources and controls fold away; the choice is the same key as Coffee's, so it carries over
+const toggleText = () => { const on = $('ui').classList.toggle('open'); $('more').textContent = on ? 'text ▴' : 'text ▾'; try { localStorage.setItem('smell-text', on ? '1' : ''); } catch {} };
+$('more').onclick = toggleText;
+try { if (localStorage.getItem('smell-text')) toggleText(); } catch {}
+addEventListener('keydown', (e) => { if (e.key === 's') toggleSources(); if (e.key.toLowerCase() === 't') toggleText(); }, { signal });   // ← → are routed by the page
 let drag = null;
 renderer.domElement.addEventListener('pointerdown', (e) => drag = { x: e.clientX, y: e.clientY }, { signal });
 addEventListener('pointerup', () => drag = null, { signal });
@@ -636,7 +649,8 @@ return {
   // for the spectator view (../shared/host.js): which step, and a jump to one when it has drifted
   step: () => idx, jump: (i) => { const how = i > idx ? 'next' : 'back'; idx = i; apply(STEPS.steps[i], how); },
   input: { next: () => go(1), back: () => go(-1), info: toggleSources, move, turn: stickTurn, recentre },
-  start() { apply(STEPS.steps[0]); },
+  // xr: your eye height, when it starts inside a session already running (after the title screen)
+  start({ xr } = {}) { if (xr) eyeH = xr; apply(STEPS.steps[0]); },
   // in the headset camera.position is the head pose; going in part-way jumps to the step's view, from your real head
   xr: {
     start() { camera.position.set(0, 0, 0); },

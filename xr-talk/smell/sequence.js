@@ -1539,6 +1539,7 @@ function textCanvas(lines, w = 1024, pad = 36) {
   return c;
 }
 const panel = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ transparent: true, depthTest: false }));
+if (params.has('still')) panel.layers.set(31);   // ?still: no text panel (stills for the title screen, ../title/tv/)
 panel.renderOrder = 10; scene.add(panel);
 // Quotes and sources are one press away (X on the left controller, S on the keyboard), as in ../billboard/:
 // steps.json `sources` is { key: { short, full } }, each step's `src` lists keys and `quotes` the quoted lines.
