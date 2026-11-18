@@ -6,7 +6,12 @@
 //
 // A sequence for ../shared/host.js (contract: ../plans/story.md) marked `intro` in index.html: it
 // has no "Proceed?" question; exit() is the fly-in and the next sequence opens normally.
-// Stills: node xr-dev/stills.mjs billboard 1 2 4 / smell 1 3 6, at 960x540 in tv/.
+//
+// The same module is the end screen (`outro` in index.html, host.outro): it opens on channel 2 filling
+// the screen with the Presentation's last frame (tv/smelling-end.jpg, the website matryoshka), backs
+// out of the picture the way the title goes in, reversed, and leaves the set running both channels,
+// with "Thank you!" in neon on the sideboard doors.
+// Stills: node xr-dev/stills.mjs billboard 1 2 4 / smell 1 3 6 13, at 960x540 in tv/.
 import * as THREE from 'three';
 import { ease } from '../shared/walkthrough.js';
 const here = (f) => new URL(f, import.meta.url).href;
@@ -26,9 +31,12 @@ const CHANNELS = [
 const HOLD = 4.5;   // seconds per still
 
 export async function load(host) {
-const { renderer } = host;
+const { renderer } = host, END = host.outro;
 const root = document.createElement('div');
-root.innerHTML = `<style>${CSS}</style><div id="ui"><div class="row"><h1 id="t">Brain Experiences</h1><button id="next" title="→ / A">tune in ▶</button></div></div>`;
+root.innerHTML = END ? `<style>${CSS}</style><div id="ui"><div class="row"><h1 id="t">Thank you</h1></div></div>`
+  : `<style>${CSS}</style><div id="ui"><div class="row"><h1 id="t">Brain Experiences</h1><button id="next" title="→ / A">tune in ▶</button></div></div>`;
+// the end screen starts on the Presentation's last frame, on channel 2
+const CH = END ? [CHANNELS[0], { ...CHANNELS[1], stills: [['smelling-end', 0.5], ...CHANNELS[1].stills] }] : CHANNELS;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0b0a10);
@@ -134,12 +142,12 @@ const SW = 1.0, SH = 0.5625;   // the picture is 16:9
 // colour fringing, noise between stills, and the dark corners of a CRT. crt 1 -> 0 flattens it all
 // on the way in, so the last frame is the plain still
 const loader = new THREE.TextureLoader();
-const stillTex = await Promise.all(CHANNELS.flatMap((c) => c.stills).map(([f]) => loader.loadAsync(here(`tv/${f}.jpg`)).then((t) => { t.colorSpace = THREE.SRGBColorSpace; return t; })));
-let k = 0; for (const c of CHANNELS) for (const s of c.stills) s.push(stillTex[k++]);   // [file, cx, texture]
+const stillTex = await Promise.all(CH.flatMap((c) => c.stills).map(([f]) => loader.loadAsync(here(`tv/${f}.jpg`)).then((t) => { t.colorSpace = THREE.SRGBColorSpace; return t; })));
+let k = 0; for (const c of CH) for (const s of c.stills) s.push(stillTex[k++]);   // [file, cx, texture]
 const U = {
-  tA: { value: CHANNELS[0].stills[0][2] }, tB: { value: CHANNELS[1].stills[0][2] },
-  cxA: { value: CHANNELS[0].stills[0][1] }, cxB: { value: CHANNELS[1].stills[0][1] },
-  split: { value: 0.5 }, nA: { value: 0 }, nB: { value: 0 }, crt: { value: 1 }, on: { value: 0 }, time: { value: 0 },
+  tA: { value: CH[0].stills[0][2] }, tB: { value: CH[1].stills[0][2] },
+  cxA: { value: CH[0].stills[0][1] }, cxB: { value: CH[1].stills[0][1] },
+  split: { value: END ? 0 : 0.5 }, nA: { value: 0 }, nB: { value: 0 }, crt: { value: 1 }, on: { value: 0 }, time: { value: 0 },
 };
 const screenGeo = new THREE.PlaneGeometry(SW, SH, 32, 18);
 { const p = screenGeo.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i) / (SW / 2), y = p.getY(i) / (SH / 2); p.setZ(i, 0.035 * (1 - x * x * 0.6) * (1 - y * y * 0.6)); } }
@@ -195,7 +203,7 @@ const osd = (text) => {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.4 * 72 / 512), new THREE.MeshBasicMaterial({ map: tex(c), transparent: true, depthWrite: false, opacity: 0 }));
   room.add(m); return m;
 };
-const OSD = CHANNELS.map((c, i) => { const m = osd(`CH ${i + 1}  ${c.name}`); m.position.set(SC.x - SW / 2 + 0.235 + i * SW / 2, SC.y + SH / 2 - 0.055, SC.z + 0.05); return m; });
+const OSD = CH.map((c, i) => { const m = osd(`CH ${i + 1}  ${c.name}`); m.position.set(SC.x - SW / 2 + 0.235 + i * SW / 2, SC.y + SH / 2 - 0.055, SC.z + 0.05); return m; });
 
 // ---------- the title over the set: "Brain Experiences", and "...Now In VR!" in neon script below it
 const title = (() => {
@@ -226,33 +234,72 @@ const hint = (() => {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.8 * 96 / 1024), new THREE.MeshBasicMaterial({ map: tex(c), transparent: true, depthWrite: false, opacity: 0 }));
   m.position.set(0, 0.66, Z + 0.262); room.add(m); return m;
 })();
+hint.visible = !END;
+// the end screen's line, below the set: "Thank you!" in the same neon script, lit across the doors
+const thanks = (() => {
+  const c = canvas(1600, 400, (g, w) => {
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    g.font = 'italic 700 230px "Brush Script MT", "Segoe Script", "Snell Roundhand", cursive, serif';
+    g.shadowColor = '#ff3fa4'; g.shadowBlur = 50; g.fillStyle = '#ffd1ec'; g.fillText('Thank you!', w / 2, 290);
+    g.shadowBlur = 14; g.fillText('Thank you!', w / 2, 290);
+  });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.5 * 400 / 1600), new THREE.MeshBasicMaterial({ map: tex(c), transparent: true, depthWrite: false, fog: false, opacity: 0 }));
+  m.position.set(0, 0.47, Z + 0.285); m.visible = END; room.add(m); return m;   // in front of the door pulls
+})();
 
 // ---------- the loop
-let t = 0, eyeH = 1.5, tuning = null;   // tuning: the way in, once Next is pressed
-const chan = CHANNELS.map((c, i) => ({ i: 0, next: HOLD + i * HOLD / 2, n: 0 }));
-const DESK = V(0, 1.5, 0.3);
+let t = END ? 2.4 : 0, eyeH = 1.5, tuning = null;   // tuning: the way in, once Next is pressed (the set is already on at the end)
+let leaving = END ? { t: 0 } : null;   // the end screen's way out of the picture
+const chan = CH.map((c, i) => ({ i: 0, next: (END ? 2.4 + 3.6 : 0) + HOLD + i * HOLD / 2, n: 0 }));
+// where the desktop camera rests and what it looks at (above the screen's centre); the end screen stands
+// further back and lower, so the "Thank you!" below the set is in the picture too
+const DESK = END ? V(0, 1.42, 0.95) : V(0, 1.5, 0.3), AIM = V(0, END ? 0.02 : 0.18, 0);
 // in the headset: the set at your eye height, and you a step closer to it than on the screen
 function place(h) { room.position.y = THREE.MathUtils.clamp(h - 1.5, -0.35, 0.3); rig.position.set(0, 0, -0.7); }
 function cut(ch, j) {   // change channel ch to its still j
-  const s = CHANNELS[ch].stills[j]; chan[ch].i = j;
+  const s = CH[ch].stills[j]; chan[ch].i = j;
   (ch ? U.tB : U.tA).value = s[2]; (ch ? U.cxB : U.cxA).value = s[1];
 }
 function frame(raw, dt, time) {
   t += raw; U.time.value = time;
   U.on.value = Math.min(1, Math.max(0, (t - 0.4) / 1.1));
-  const shown = Math.min(1, Math.max(0, (t - 1.6) / 0.8)) * (tuning ? Math.max(0, 1 - tuning.t / 0.5) : 1);
+  const shown = Math.min(1, Math.max(0, (t - 1.6) / 0.8)) * (tuning ? Math.max(0, 1 - tuning.t / 0.5) : 1) * (leaving ? Math.min(1, Math.max(0, (leaving.t - 3.0) / 0.6)) : 1);
   for (const m of OSD) m.material.opacity = shown;
   hint.material.opacity = shown * (0.55 + 0.45 * Math.sin(time * 2.4) ** 2);
   // every few seconds a burst of noise and the next still, the two channels out of step
   chan.forEach((c, ch) => {
-    if (tuning && ch === 0) return;
+    if ((tuning && ch === 0) || leaving) return;
     if (t > c.next) { c.next = t + HOLD; c.n = 0.0001; }
-    if (c.n > 0) { c.n += raw; if (c.n > 0.18 && !c.cut) { cut(ch, (c.i + 1) % CHANNELS[ch].stills.length); c.cut = true; } if (c.n > 0.5) { c.n = 0; c.cut = false; } }
+    if (c.n > 0) { c.n += raw; if (c.n > 0.18 && !c.cut) { cut(ch, (c.i + 1) % CH[ch].stills.length); c.cut = true; } if (c.n > 0.5) { c.n = 0; c.cut = false; } }
     (ch ? U.nB : U.nA).value = c.n > 0 ? Math.sin(Math.min(1, c.n / 0.5) * Math.PI) * 0.9 : 0;
   });
   glow.intensity = U.on.value * (1.2 + 0.25 * Math.sin(time * 9) * U.crt.value);
-  if (!renderer.xr.isPresenting && !tuning) { camera.position.copy(DESK); camera.lookAt(SC.clone().add(room.position).add(V(0, 0.18, 0))); }
+  if (END) thanks.material.opacity = shown * (0.85 + 0.15 * Math.sin(time * 1.7) ** 2) * (Math.sin(time * 1.3) * Math.sin(time * 7.1) > 0.93 ? 0.55 : 1);   // a neon tube, with the odd flicker
+  if (!renderer.xr.isPresenting && !tuning && !leaving) { camera.position.copy(DESK); camera.lookAt(SC.clone().add(room.position).add(AIM)); }
   if (tuning) tune(raw);
+  if (leaving) leave(raw);
+}
+// close enough to the screen that the picture covers the window
+const closeUp = () => { const tn = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)); return Math.min(SH / 2 / tn, SW / 2 / (tn * camera.aspect)); };
+// the end screen's way out: the way in, played backwards. Channel 2 fills the screen; you back out of
+// it, the tube curves and the scanlines come back, and channel 1 slides in on the left
+function leave(raw) {
+  const L = leaving, r = (a, b) => ease(Math.min(1, Math.max(0, (L.t - a) / (b - a))));
+  L.t += raw;
+  const f = r(0.1, 2.5);   // 0: at the glass, 1: where you stand
+  U.crt.value = r(0.1, 1.4); screen.scale.z = U.crt.value;
+  U.split.value = THREE.MathUtils.lerp(0, 0.5, r(1.9, 3.1));
+  const sc = SC.clone().add(room.position);
+  if (renderer.xr.isPresenting) {
+    // the rig takes your head from just in front of the glass back to your place (camera.position is
+    // your head in the rig, from the last frame)
+    const rest = V(0, 0, -0.7), start = sc.clone().add(V(0, 0, 0.2)).sub(camera.position);
+    rig.position.lerpVectors(start, rest, f);
+  } else {
+    camera.position.lerpVectors(sc.clone().add(V(0, 0, closeUp())), DESK, f);
+    camera.lookAt(sc.clone().lerp(sc.clone().add(AIM), f));
+  }
+  if (L.t > 3.6) { leaving = null; const n = chan[1].next - t; chan[0].next = t + HOLD / 2; chan[1].next = t + Math.max(HOLD, n); }
 }
 // the way in: channel 1 cuts to the street, opens to the whole screen, and you fly into it
 function tune(raw) {
@@ -270,9 +317,8 @@ function tune(raw) {
     if (!T.from) T.from = { rig: rig.position.clone(), off: head.clone().sub(rig.position) };
     rig.position.lerpVectors(T.from.rig, want.sub(T.from.off), f);
   } else {
-    // close enough that the picture covers the window
-    const tn = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)), d = Math.min(SH / 2 / tn, SW / 2 / (tn * camera.aspect));
-    if (!T.from) T.from = { pos: camera.position.clone(), look: SC.clone().add(room.position).add(V(0, 0.18, 0)) };
+    const d = closeUp();
+    if (!T.from) T.from = { pos: camera.position.clone(), look: SC.clone().add(room.position).add(AIM) };
     camera.position.lerpVectors(T.from.pos, sc.clone().add(V(0, 0, d)), f);
     camera.lookAt(T.from.look.clone().lerp(sc, f));
   }
@@ -280,13 +326,16 @@ function tune(raw) {
 }
 
 const desk = camera.position.copy(DESK).clone();
-const next = () => host.end();
-root.querySelector('#next').onclick = next;
+const next = () => { if (!END) host.end(); };   // the end screen is the last: Next does nothing
+root.querySelector('#next')?.addEventListener('click', next);
 return {
   scene, camera, frame, ui: root,
   input: { next },
-  start({ xr } = {}) { if (xr) { eyeH = xr; camera.position.set(0, 0, 0); place(eyeH); } },
-  check: () => (tuning ? ['title: the camera is still moving'] : []),
+  start({ xr } = {}) {
+    if (xr) { eyeH = xr; camera.position.set(0, 0, 0); place(eyeH); }
+    if (END) leave(0);   // the first frame is the close-up, not the room
+  },
+  check: () => (tuning || leaving ? ['title: the camera is still moving'] : []),
   xr: {
     start() { camera.position.set(0, 0, 0); camera.rotation.set(0, 0, 0); },
     ready(h) { eyeH = h; place(h); },

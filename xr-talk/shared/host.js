@@ -10,10 +10,12 @@
 // raw: real seconds since the last frame (camera moves, fades), dt: the same capped at 0.05 s
 // (sticks). Sequences call host.end() when Next is pressed on their last step.
 //
-//   runStory([{ title, module, fallback, intro }], { startAt })   module: path from the page
+//   runStory([{ title, module, fallback, intro, outro }], { startAt })   module: path from the page
 //
 // intro: a title screen (title/sequence.js). It asks no question: Next plays its exit() (the way in)
 // and the next sequence opens as it does on its own, not on his face.
+// outro: the end screen (the same module, told by host.outro). No question before it either: Next on
+// the last step before it opens it, and it plays its own way out of the picture. It loads early.
 //
 // A sequence that cannot be loaded as a module yet (fallback: its own page) is opened as a page
 // instead: the VR session ends there and Enter VR has to be pressed again.
@@ -51,7 +53,7 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
   function load(i) {
     if (!loaded.has(i)) {
       const s = SEQS[i], ctrl = new AbortController();
-      const host = { renderer, params, speed, signal: ctrl.signal, title: s.title, end: () => ended(i) };
+      const host = { renderer, params, speed, signal: ctrl.signal, title: s.title, outro: !!s.outro, end: () => ended(i) };
       loaded.set(i, import(new URL(s.module, location.href).href).then((m) => m.load(host)).then((seq) => Object.assign(seq, { ctrl })));
     }
     return loaded.get(i);
@@ -79,6 +81,7 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
     if (seq.ui) $('seq-ui').replaceChildren(seq.ui);
     seq.camera.add(spinner);
     resize();
+    if (SEQS[i + 1]?.outro) load(i + 1).catch(() => {});   // the end screen, ready before it is needed
   }
 
   // while the next sequence is still loading (you stay on his face): a small turning ring, no words
@@ -92,7 +95,7 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
   // ---------- between sequences: Proceed? (in front of you in the scene; also as buttons on the desktop)
   function ended(i) {
     if (busy || popup || i !== at || i + 1 >= SEQS.length) return;
-    if (SEQS[i].intro) { transition(i); return; }
+    if (SEQS[i].intro || SEQS[i + 1].outro) { transition(i); return; }
     const cam = active.camera, k = cam.getWorldScale(V()).x, p = cam.getWorldPosition(V()), f = cam.getWorldDirection(V());
     f.y = 0; f.normalize();
     const c = textCanvas([

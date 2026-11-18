@@ -1175,7 +1175,7 @@ const LOGOS = Object.fromEntries(await Promise.all(['webxr', 'openxr'].map(async
     text([white(MD.blend.title, 46, 700), ...MD.blend.lines.map((l) => ({ text: nb(l) || ' ', font: '29px monospace', color: l.startsWith('glTF') || l.startsWith('No edges') ? '#ffd88a' : '#e8e8e8', lh: 38 }))], 1.2, V(2.35, 1.3, 0), 'blend sample', false);
     // L · who loads the files (step pipeline-load): the bracket under the three columns runs into a pipe going
     // down (the GLTFLoader add-on) to a three.js tile below. W · our website (step pipeline-site): a matryoshka
-    // drawn round the whole scene, cut open so the tile shows inside it, labelled "imported"; the step zooms out.
+    // drawn round the whole scene, cut open so the tile shows inside it; the step zooms out.
     pipeRole = 'pipeL'; role.pipeL = [];
     const LD = MD.load;
     if (LD) {
@@ -1355,6 +1355,62 @@ const LOGOS = Object.fromEntries(await Promise.all(['webxr', 'openxr'].map(async
         });
         text([white(OX.title ?? 'One road to the headset', 60, 800), white(OX.sub ?? 'pose up, frame down: the same calls, whichever engine', 40, 400, '#c8d0dc')], 1.9, V(XC, top + 0.36, 0), 'one road title', false);
       }
+      // S · how every scene is built (step pipeline-layout), under the OpenXR board: our side of that road. The page
+      // imports three.js; shared/host.js owns the renderer, the VR session and the loop; each scene is a folder of the
+      // same shape, plugged into it by the same load(host). The Presentation is drawn inside Smelling: one module.
+      // Words: pipeline.json, models.layout.
+      pipeRole = 'pipeS'; role.pipeS = [];
+      if (MD.layout) { const LY = MD.layout, SC = -3.65, mono = '600 54px ui-monospace, Menlo, Consolas, monospace';
+        // a label on a rounded tile, w × h; the text shrinks to fit. Monospace: a file name
+        const chip = (txt, w, h, at, name, { fg = '#ffffff', bg = 'rgba(12,16,24,0.92)', edge = null, font = mono } = {}) => {
+          const c = document.createElement('canvas'), g = c.getContext('2d'); c.height = 96; c.width = Math.round(96 * w / h);
+          g.fillStyle = bg; g.beginPath(); g.roundRect(3, 3, c.width - 6, c.height - 6, 24); g.fill();
+          if (edge) { g.strokeStyle = edge; g.lineWidth = 5; g.stroke(); }
+          g.font = font; const s = Math.min(1, (c.width - 44) / g.measureText(txt).width);
+          g.translate(c.width / 2, c.height / 2 + 3); g.scale(s, s); g.fillStyle = fg; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(txt, 0, 0);
+          const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+          const m = reg(new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })), name);
+          m.position.copy(at); m.renderOrder = 2; m.userData.max = 1; return m;
+        };
+        const line = (pts, name, n = 2) => { const cv = new THREE.CatmullRomCurve3(pts); tube(cv.getPoints(8), 0.007, 0xffb347, name); packets(cv, 0xffd88a, n, 0.3, name); };
+        const sans = (w) => `${w} 60px system-ui`, clear = 'rgba(0,0,0,0)';
+        text([white(LY.title, 60, 800), white(LY.sub, 38, 400, '#c8d0dc')], 1.9, V(SC, -3.56, 0), 'layout title', false);
+        // the page, the library, the XR door; OpenXR is the board above
+        const R1 = -3.98;
+        chip(LY.page, 0.95, 0.14, V(SC - 1.2, R1, 0.02), 'layout page', { edge: '#ffffff' });
+        chip(LY.lib, 1.0, 0.14, V(SC, R1, 0.02), 'layout three.js', { edge: '#ffffff' });
+        plate('webxr', 0.12, V(SC + 1.05, R1, 0.02), 'layout webxr', LD.xr, COL.pose[1]);
+        chip(LY.next, 0.5, 0.1, V(SC + 1.6, R1, 0.02), 'layout to openxr', { fg: '#5fe0cf', bg: clear, font: sans(700) });
+        line([V(SC - 0.72, R1, 0), V(SC - 0.5, R1, 0)], 'layout imports', 1);
+        chip(LY.imports, 0.36, 0.08, V(SC - 0.61, R1 + 0.11, 0.02), 'layout imports label', { fg: '#9aa6b5', bg: clear, font: sans(600) });
+        line([V(SC + 0.5, R1, 0), V(SC + 0.88, R1, 0)], 'layout xr', 1);
+        chip(LY.xr, 0.44, 0.08, V(SC + 0.69, R1 + 0.11, 0.02), 'layout xr label', { fg: '#9aa6b5', bg: clear, font: sans(600) });
+        // the host: one bar the scenes plug into
+        const R2 = -4.4;
+        line([V(SC - 1.2, R1 - 0.07, 0), V(SC - 1.2, R2 + 0.12, 0)], 'layout page to host', 1);
+        reg(new THREE.Mesh(new THREE.BoxGeometry(3.7, 0.24, 0.1), std(0x4a3b1f, { roughness: 0.45 })), 'layout host bar').position.set(SC, R2, -0.03);
+        chip(LY.host, 0.8, 0.14, V(SC - 1.2, R2, 0.03), 'layout host', { fg: '#ffd88a', edge: '#ffb347' });
+        chip(LY.hostLine, 2.5, 0.09, V(SC + 0.45, R2, 0.03), 'layout host line', { fg: '#f0e2c0', bg: clear, font: sans(500) });
+        // the cards: the same folder four times, rows lined up; Smelling and the Presentation share one plug
+        const CW = 0.82, CH = 1.05, CT = -4.98, CX = [-1.38, -0.46, 0.46, 1.38].map((d) => SC + d), RY = [-5.4, -5.6, -5.8];
+        const EDGE = ['#ffb347', '#7fd1ff', '#8fe0a8'];
+        const plugs = [CX[0], CX[1], (CX[2] + CX[3]) / 2];
+        plugs.forEach((x, j) => {
+          const bottom = j < 2 ? CT : CT + 0.08;
+          line([V(x, R2 - 0.12, 0), V(x, bottom, 0)], `layout plug ${j}`);
+          chip(LY.plug, 0.44, 0.085, V(x, (R2 - 0.12 + bottom) / 2, 0.03), `layout plug label ${j}`, { fg: '#ffd88a', edge: '#ffb347', font: '600 50px ui-monospace, Menlo, Consolas, monospace' });
+        });
+        tube([V(CX[2], CT, 0), V(CX[2], CT + 0.07, 0), V(CX[2] + 0.02, CT + 0.08, 0), V(CX[3] - 0.02, CT + 0.08, 0), V(CX[3], CT + 0.07, 0), V(CX[3], CT, 0)], 0.007, 0xffb347, 'layout one module');
+        chip(LY.module, 0.5, 0.08, V(CX[3] - 0.02, CT + 0.17, 0.02), 'layout one module label', { fg: '#9aa6b5', bg: clear, font: sans(600) });
+        LY.scenes.forEach((sc, j) => {
+          reg(new THREE.Mesh(new THREE.BoxGeometry(CW, CH, 0.06), std(0x262b35, { roughness: 0.5 })), `layout card ${j}`).position.set(CX[j], CT - CH / 2, -0.03);
+          chip(sc.name, 0.72, 0.11, V(CX[j], CT - 0.11, 0.02), `layout card name ${j}`, { fg: '#ffffff', bg: clear, font: sans(800) });
+          chip(sc.dir, 0.72, 0.1, V(CX[j], CT - 0.235, 0.02), `layout card dir ${j}`, { fg: '#9fd3ff', bg: clear });
+          sc.files.forEach((f, k) => chip(f ?? LY.empty, 0.72, 0.14, V(CX[j], RY[k], 0.02), `layout slot ${j} ${k}`,
+            f ? { edge: EDGE[k] } : { fg: '#6b7380', edge: '#3a404b', bg: 'rgba(12,16,24,0.5)', font: sans(500) }));
+        });
+        LY.rows.forEach((r, k) => { const m = pill(r, EDGE[k], 0.07, V(0, 0, 0.02), `layout row ${k}`); m.position.x = CX[0] - CW / 2 - 0.06 - m.geometry.parameters.width / 2; m.position.y = RY[k]; });
+      }
       ROBOT = ROB;
       pipeRole = 'pipeL';
       // W · the website: a matryoshka round everything, its front half glass, the back half opened towards you
@@ -1377,9 +1433,8 @@ const LOGOS = Object.fromEntries(await Promise.all(['webxr', 'openxr'].map(async
       for (const sx of [-1, 1]) { dot(0.011 * H, 0x23262e, sx * 0.038 * H, 0.012 * H, 'website doll eye ' + sx, 1.25); dot(0.021 * H, 0xec8f96, sx * 0.062 * H, -0.03 * H, 'website doll cheek ' + sx, 0.85); }
       dot(0.014 * H, 0xc8323c, 0, -0.06 * H, 'website doll lips', 0.55);
       text([white(LD.site, 110, 800), ...LD.siteLines.map((l) => white(l, 56))], 7.5, V(cx, base + H + 1.9, 0), 'website title', false);
-      text([white('← ' + LD.imported, 150, 800, '#ffd88a')], 1.6, V(1.15, TY, 0.05), 'imported', false);
     }
-    for (const m of [...role.pipeM, ...role.pipeMB, ...role.pipeL, ...(role.pipeW ?? []), ...(role.pipeG ?? []), ...(role.pipeH ?? []), ...(role.pipeX ?? [])]) if (m.parent === anat) board.add(m);
+    for (const m of [...role.pipeM, ...role.pipeMB, ...role.pipeL, ...(role.pipeW ?? []), ...(role.pipeG ?? []), ...(role.pipeH ?? []), ...(role.pipeX ?? []), ...(role.pipeS ?? [])]) if (m.parent === anat) board.add(m);
   }
 }
 // the three.js robot at work: on the load step its GLTFLoader arm carries the file blocks into three.js and its
@@ -1496,6 +1551,7 @@ const FOCUS = {
   load: { at: gogAt(0, -1.35), scale: 1 / GOG.k, dist: 3.0 },   // the robot, with the files above and the GPU below   // down the loader pipe to the three.js tile, the columns still above
   frame: { at: gogAt(0, -2.0), scale: 1 / GOG.k, dist: 3.2 },   // every frame: the robot down to the headset under the conveyor
   openxr: { at: gogAt(-3.8, -2.15), scale: 1 / GOG.k, dist: 3.0 },   // one road to the headset, left of the robot
+  layout: { at: gogAt(-3.65, -4.75), scale: 1 / GOG.k, dist: 3.0 },  // how every scene is built, under the OpenXR board
   site: { at: gogAt(-0.1, 3.0), scale: 0.12 / GOG.k, dist: 1.9 },    // out until the website matryoshka round it all is in view   // the models board, to his right; he stands at its left
   stage: { at: new THREE.Vector3(0, 1.05, 0.15), scale: 1, dist: 2.4, yaw: -Math.PI * 0.18, floor: true },
   outro: { at: new THREE.Vector3(0, A.head.y - 0.13, 0.0), scale: 1.5, dist: 0.85, yaw: -Math.PI * 0.4 },   // from his side: head and upper body, the pipeline slides go around him
@@ -1656,7 +1712,7 @@ function setInset(kind) {
 
 // ---------- steps
 let idx = 0;
-const ROLE_LIST = ['body', 'face', 'cup', 'cavity', 'airway', 'nose', 'skull', 'brain', 'pathway', 'ethmoid', 'cribriform', 'mouth', 'zoom', 'headset', 'base', 'pipeA', 'pipeB', 'pipeC', 'pipeD', 'pipeM', 'pipeMB', 'pipeL', 'pipeW', 'pipeG', 'pipeH', 'pipeX'];
+const ROLE_LIST = ['body', 'face', 'cup', 'cavity', 'airway', 'nose', 'skull', 'brain', 'pathway', 'ethmoid', 'cribriform', 'mouth', 'zoom', 'headset', 'base', 'pipeA', 'pipeB', 'pipeC', 'pipeD', 'pipeM', 'pipeMB', 'pipeL', 'pipeW', 'pipeG', 'pipeH', 'pipeX', 'pipeS'];
 // ---------- inside the nose: the olfactory epithelium as a room you stand in (schematic, not to scale)
 // The roof is the epithelium (supporting cells, with the receptor neurons' knobs poking through); cilia
 // hang from each knob into a mucus layer; odorant molecules rise from the air below, dissolve in the
@@ -2194,7 +2250,7 @@ function camTick(dt) {
 function setTargets(step) {
   const show = new Set(step.show), hl = new Set(step.highlight ?? []), dim = new Set(step.dim ?? []);
   // context opacities: the body and skull stay ghostly once we are inside the head
-  const ctx = { body: step.focus === 'body' ? 1 : 0, face: 0.2, cup: 1, cavity: 0.3, airway: 0.55, nose: 0.6, skull: step.focus === 'body' ? 1 : 0.12, brain: 0.16, pathway: 0.9, ethmoid: 0.35, cribriform: 0.9, mouth: 1, zoom: 1, headset: 1, base: 1, pipeA: 1, pipeB: 1, pipeC: 1, pipeD: 1, pipeM: 1, pipeMB: 1, pipeL: 1, pipeW: 1, pipeG: 1, pipeH: 1, pipeX: 1 };
+  const ctx = { body: step.focus === 'body' ? 1 : 0, face: 0.2, cup: 1, cavity: 0.3, airway: 0.55, nose: 0.6, skull: step.focus === 'body' ? 1 : 0.12, brain: 0.16, pathway: 0.9, ethmoid: 0.35, cribriform: 0.9, mouth: 1, zoom: 1, headset: 1, base: 1, pipeA: 1, pipeB: 1, pipeC: 1, pipeD: 1, pipeM: 1, pipeMB: 1, pipeL: 1, pipeW: 1, pipeG: 1, pipeH: 1, pipeX: 1, pipeS: 1 };
   if (step.id === 'headset' || step.id.startsWith('pipeline')) Object.assign(ctx, { body: 1, face: 1 });   // the whole man again
   if (PIPE_STYLES.length > 2 && show.delete('pipeC')) show.add('pipe' + PIPE_STYLE);   // ?blocks=A or D: that prototype instead of C
   if (step.cut) Object.assign(ctx, { face: 1, cavity: 1, nose: 1, skull: 1, brain: 1, ethmoid: 0 });   // the cut view is a drawing: a few bones, the brain cut too

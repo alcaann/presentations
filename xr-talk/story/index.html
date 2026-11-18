@@ -23,6 +23,8 @@ await runStory([
   { title: 'Sequence 1: The Sign', module: '../billboard/sequence.js' },
   // Sequence 3 (the presentation) runs on inside it
   { title: 'Sequence 2: Coffee', module: '../smell/sequence.js', fallback: '../smell/' },
+  // the end: back out of the television's channel 2, both channels running, "Thank you!" below
+  { title: 'Thank you', module: '../title/sequence.js', outro: true },
 ], { startAt: seq ? Number(seq) : 0 });   // ?seq=1: straight to Sequence 1, past the title
 </script>
 </body></html>

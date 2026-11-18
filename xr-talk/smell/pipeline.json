@@ -196,10 +196,9 @@
    "logo": "three.js",
    "site": "Our website · index.html",
    "siteLines": [
-    "one page, served from the laptop: it imports three.js,",
-    "which loads every model and draws every frame"
+    "one page, opened in the",
+    "headset's browser"
    ],
-   "imported": "imported",
    "gpu": "Headset GPU",
    "grab": "GLTFLoader add-on",
    "push": "WebGL 2",
@@ -233,6 +232,64 @@
     ],
     "device": "Quest 3"
    }
+  },
+  "layout": {
+   "note": "Step pipeline-layout (2026-11-18): under the OpenXR board, what our side of that road is made of. Read from the repository: story/index.html lists the scenes (title, billboard, smell) and imports three.js from shared/vendor/; shared/host.js owns the renderer, the VR session, the controllers, the loop and the hand-overs, and calls each scene's load(host), which returns its scene, camera, frame, input and exit. Each scene folder has sequence.js (the code), steps.json (the words) and its models; the title has no steps.json (its few words are in its code) and uses still pictures (title/tv/*.jpg), not models. The Presentation is not a folder of its own: it is the pipeline-* steps of smell/, drawn as a fourth card that shares Smelling's plug.",
+   "title": "How every scene is built",
+   "sub": "each scene: load(host) → { scene, camera, frame, input, exit }",
+   "page": "story/index.html",
+   "lib": "three.js · shared/vendor/",
+   "imports": "imports",
+   "xr": "renderer.xr",
+   "next": "↑ OpenXR",
+   "host": "shared/host.js",
+   "hostLine": "one renderer · one VR session · controllers · the loop · the hand-overs",
+   "plug": "load(host)",
+   "module": "one module",
+   "rows": [
+    "code",
+    "words",
+    "models"
+   ],
+   "empty": "(in the code)",
+   "scenes": [
+    {
+     "name": "Title",
+     "dir": "title/",
+     "files": [
+      "sequence.js",
+      null,
+      "tv/*.jpg"
+     ]
+    },
+    {
+     "name": "Seeing",
+     "dir": "billboard/",
+     "files": [
+      "sequence.js",
+      "steps.json",
+      "billboard.glb"
+     ]
+    },
+    {
+     "name": "Smelling",
+     "dir": "smell/",
+     "files": [
+      "sequence.js",
+      "steps.json",
+      "*.glb"
+     ]
+    },
+    {
+     "name": "Presentation",
+     "dir": "smell/",
+     "files": [
+      "sequence.js",
+      "steps.json + pipeline.json",
+      "headset.glb"
+     ]
+    }
+   ]
   }
  }
 }

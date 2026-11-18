@@ -56,6 +56,10 @@
   "QB": {
    "short": "our look inside Quest Browser 156",
    "full": "Our inspection of the Quest Browser app (156.0.0.38.16) on our Quest 3, 2026-11-17: it ships libopenxr_loader.so (the OpenXR loader), and its libchrome.so contains xrCreateSwapchain, XR_KHR_opengl_es_enable and XR_FB_passthrough. Method and limits: plans/pipeline.md, \"Under WebXR: OpenXR\"."
+  },
+  "REPO": {
+   "short": "our repository",
+   "full": "Our code, read 2026-11-18: story/index.html (the scenes in order, three.js from shared/vendor/), shared/host.js (renderer, VR session, controllers, loop, hand-overs; calls each scene's load(host)), title/, billboard/, smell/."
   }
  },
  "steps": [
@@ -407,9 +411,52 @@
    ]
   },
   {
+   "id": "pipeline-layout",
+   "title": "How every scene is built",
+   "text": "That's the road out. Our side of it: each scene is a folder of the same shape, code in sequence.js, words in steps.json, models in .glb files. One page plays them in turn, in one VR session, and every scene plugs into it the same way. The library is three.js, which reaches the headset through WebXR. This part, the Presentation, lives inside Smelling's folder.",
+   "show": [
+    "pipeM",
+    "pipeL",
+    "pipeH",
+    "pipeG",
+    "pipeX",
+    "pipeS"
+   ],
+   "focus": "layout",
+   "cam": {
+    "pos": [
+     0,
+     1.4,
+     -0.6
+    ],
+    "look": [
+     0,
+     1.35,
+     -3.0
+    ]
+   },
+   "src": [
+    "REPO",
+    "THREE",
+    "WEBXR"
+   ],
+   "inside": true,
+   "panel": [
+    2.4,
+    0.2,
+    0.8
+   ],
+   "panelNear": [
+    1.0,
+    0.6,
+    1.2,
+    0.55
+   ]
+  },
+  {
    "id": "pipeline-site",
    "title": "All inside our website",
-   "text": "And three.js is one file our page imports. Everything you have seen, the man, the anatomy, these boards, is that one web page, opened in the headset's browser.",
+   "text": "Everything you have seen, the man, the anatomy, these boards, is one web page, opened in the headset's browser.",
    "show": [
     "pipeM",
     "pipeL",
