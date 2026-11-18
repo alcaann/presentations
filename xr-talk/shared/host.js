@@ -273,6 +273,9 @@ export async function runStory(SEQS, { startAt = 0 } = {}) {
       const ses = renderer.xr.getSession();
       if (ses) await new Promise((r) => { renderer.xr.addEventListener('sessionend', r, { once: true }); ses.end().catch(r); });
       Object.assign(cv.style, { width: '', height: '' }); resize();
+      // three.js leaves the camera turned as the head last was (goggles put down idle: any angle, even
+      // upside down), and the desktop views assume it level and facing ahead: straighten it first
+      if (active?.camera) { active.camera.rotation.set(0, 0, 0); active.camera.scale.set(1, 1, 1); active.camera.updateMatrixWorld(); }
       // the step again, now on the desktop: its own camera view, not wherever the head was
       if (!busy && active?.jump && active.step) active.jump(active.step());
     }
